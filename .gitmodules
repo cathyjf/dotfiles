@@ -1,3 +1,4 @@
+# -*- gitmodules -*-
 [submodule "dotfiles-private"]
     path = private
     url = git@github.com:cathyjf/dotfiles-private.git

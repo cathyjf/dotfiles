@@ -1,0 +1,7 @@
+# -*- gitattributes -*-
+# Manual specification of linguist information for some files.
+# See https://github.com/github-linguist/linguist/blob/main/docs/overrides.md.
+# See also https://github.com/github-linguist/linguist/blob/main/lib/linguist/languages.yml.
+
+/home/private_dot_config/private_chezmoi/private_chezmoi.toml.tmpl          linguist-detectable
+/home/private_dot_ssh/private_config.tmpl                                   linguist-detectable

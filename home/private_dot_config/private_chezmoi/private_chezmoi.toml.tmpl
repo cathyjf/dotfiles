@@ -1,3 +1,4 @@
+# -*- toml -*-
 umask = 0o077
 encryption = "gpg"
 {{ $miscDir := trim (output "/bin/realpath" (print .chezmoi.sourceDir "/../misc")) -}}
