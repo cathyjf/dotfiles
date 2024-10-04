@@ -1,0 +1,59 @@
+section: screens
+	cathy-macbookair:
+		halfDuplexCapsLock = false
+		halfDuplexNumLock = false
+		halfDuplexScrollLock = false
+		xtestIsXineramaUnaware = false
+		switchCorners = none 
+		switchCornerSize = 0
+	cathy-alienware:
+		halfDuplexCapsLock = false
+		halfDuplexNumLock = false
+		halfDuplexScrollLock = false
+		xtestIsXineramaUnaware = false
+		switchCorners = none 
+		switchCornerSize = 0
+	cathy-macbookpro:
+		halfDuplexCapsLock = false
+		halfDuplexNumLock = false
+		halfDuplexScrollLock = false
+		xtestIsXineramaUnaware = false
+		switchCorners = none 
+		switchCornerSize = 0
+end
+
+section: aliases
+end
+
+section: options
+	relativeMouseMoves = true
+	win32KeepForeground = false
+	disableLockToScreen = false
+	clipboardSharing = false
+	clipboardSharingSize = 3072
+	switchCorners = none 
+	switchCornerSize = 0
+end
+
+{{ if eq .chezmoi.hostname "MacBook-Pro" -}}
+
+section: links
+	cathy-macbookair:
+		right = cathy-alienware
+	cathy-alienware:
+		right = cathy-macbookpro
+		left = cathy-macbookair
+	cathy-macbookpro:
+		left = cathy-alienware
+end
+
+{{- else -}}
+
+section: links
+	cathy-macbookair:
+		left = cathy-alienware
+	cathy-alienware:
+		right = cathy-macbookair
+end
+
+{{- end -}}

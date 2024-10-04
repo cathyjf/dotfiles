@@ -1,0 +1,10 @@
+#!{{ template "brew-root" . }}/bin/fish --no-config
+
+set -l gpg_agent_bin '{{ template "brew-root" . }}/bin/keychain-interpose-agent'
+set -l keychain_bundle (path normalize (path dirname (path resolve $gpg_agent_bin))/../..)
+
+if test -x $gpg_agent_bin; and spctl -a $keychain_bundle 2>/dev/null
+    exec $gpg_agent_bin $argv
+end
+
+exec gpg-agent --pinentry-program (which pinentry-tty) $argv

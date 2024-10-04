@@ -1,0 +1,4 @@
+#!/bin/bash
+KEY_ID="$(chezmoi execute-template '{{ .gpg.cathyPrimaryKeyFingerprint }}')" || exit 1
+chezmoi_misc_path="$(chezmoi execute-template '{{ .chezmoi.miscDir }}')" || exit 1
+KEY_DIR="${chezmoi_misc_path}"/gpg/key

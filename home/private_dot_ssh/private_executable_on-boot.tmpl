@@ -1,0 +1,14 @@
+#!/bin/sh
+export PATH=
+(
+    # The `run-startup-commands` script installs our custom pf rules, so that
+    # script must finish running first before we can start sshuttle or else
+    # we'll run into race conditions when sshuttle alters the pf configuration.
+    /usr/bin/sudo -n /var/root/run-startup-commands
+    /usr/bin/sudo -n -u _sshuttle /var/sshuttle/connect.sh -v -x
+) &
+{{ if eq .chezmoi.hostname "MacBook-Pro" -}}
+~/.ssh/restart-ssh-macbookair.sh -x &
+{{- end }}
+~/.ssh/restart-ssh-alienware.sh -x &
+wait

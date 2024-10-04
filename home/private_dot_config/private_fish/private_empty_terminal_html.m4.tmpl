@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
+<html xmlns='http://www.w3.org/1999/xhtml'>
+<head>
+    <meta http-equiv='Content-Type' content='application/xhtml+xml; charset=utf-8' />
+    <link rel='stylesheet' href='{{
+        output (print .chezmoi.miscDir "/tools/encodeURI.js")
+            (print "file://" .chezmoi.homeDir "/.config/fish/man_pager/stylesheet.css")
+    }}' />
+    <title>HTML_TITLE</title>
+</head>
+<body>
+<pre>HTML_TEXT</pre>
+</body></html>

@@ -1,0 +1,4 @@
+.DS_Store
+.vscode
+/misc/Brewfile.lock.json
+/misc/unlock-windows-file-history/bin/

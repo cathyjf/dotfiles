@@ -1,0 +1,10 @@
+Include ssh_config.d/*.conf
+
+Host *
+	IdentitiesOnly yes
+	PasswordAuthentication no
+
+# This ensures that gpg-agent is running and that any pinentry prompts will
+# appear on the correct tty. See:
+#     https://bugzilla.mindrot.org/show_bug.cgi?id=2824#c11.
+Match host * exec "gpg-connect-agent --agent-program '{{ .chezmoi.homeDir }}/.gnupg/keychain-agent.sh' updatestartuptty /bye"

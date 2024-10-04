@@ -1,0 +1,15 @@
+agent-program {{ .chezmoi.homeDir }}/.gnupg/keychain-agent.sh
+
+default-key {{ .gpg.cathySigningKeyFingerprint }}
+trusted-key {{ .gpg.cathyPrimaryKeyFingerprint }}
+default-recipient {{ .gpg.cathyEncryptionKeyFingerprint }}
+
+require-cross-certification
+
+charset utf-8
+
+list-options show-keyserver-urls show-notations
+
+keyserver-options honor-keyserver-url no-include-revoked no-export-attributes
+
+auto-key-retrieve

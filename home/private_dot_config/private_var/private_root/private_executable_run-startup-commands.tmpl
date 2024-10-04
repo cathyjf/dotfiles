@@ -1,0 +1,43 @@
+#!/bin/sh
+# Note: This script is intentionally run with /bin/sh, rather than with the
+#       version of bash installed by brew. This is because the version of bash
+#       installed by brew can be edited by non-root users and therefore cannot
+#       be trusted in this script intended to be run by root.
+
+mount_windows_file_history() {
+    if (/sbin/mount | /usr/bin/grep "$1" > /dev/null); then
+        echo "Windows File History is already mounted."
+        return
+    fi
+
+    /bin/mkdir "$1"
+    /usr/sbin/chown WindowsFileHistory:staff "$1"
+    /var/root/unlock-windows-file-history
+    /usr/sbin/diskutil mount -mountOptions owners,nodev,noexec,nosuid,rw \
+        -mountPoint "$1" D427A4B2-75D5-496B-93DA-D5DD9662256C
+}
+
+start_pf() {
+    # Ensure that the brew installation of smbd is whitelisted in the macOS
+    # application firewall.
+    SMBD_PATH=$(/usr/bin/readlink -f {{ template "brew-root" . }}/sbin/samba-dot-org-smbd)
+    /usr/libexec/ApplicationFirewall/socketfilterfw --add "$SMBD_PATH"
+    /usr/libexec/ApplicationFirewall/socketfilterfw --unblockapp "$SMBD_PATH"
+
+    PF_CONF=/var/root/pf.conf
+    /bin/cat /etc/pf.conf - > "$PF_CONF" << 'APPEND_RULES'
+block return in proto tcp from any to any port 445
+pass in inet proto tcp from 127.0.0.1 to 127.0.0.1 port 445 no state
+pass in inet proto tcp from cathy-alienware to cathy-mac port 445 no state
+pass in inet proto tcp from cathy-mac to cathy-mac port 445 no state
+pass in inet proto tcp from cathy-macbookair to cathy-mac port 445 no state
+pass in inet proto tcp from cathy-macbookair-wifi to cathy-mac port 445 no state
+APPEND_RULES
+
+    echo "Starting (or restarting) pf..."
+    /sbin/pfctl -E -f "$PF_CONF"
+}
+
+mount_windows_file_history "/Volumes/Windows File History" &
+start_pf &
+wait

@@ -1,0 +1,9 @@
+pinentry-program {{ .chezmoi.homeDir }}/.gnupg/pinentry-wrapper
+enable-ssh-support
+default-cache-ttl 180
+default-cache-ttl-ssh 180
+disable-scdaemon
+allow-loopback-pinentry
+
+# log-file {{ .chezmoi.homeDir }}/.gnupg/log/gpg-agent.log
+# debug-level guru

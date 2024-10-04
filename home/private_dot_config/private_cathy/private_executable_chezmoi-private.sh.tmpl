@@ -1,0 +1,4 @@
+#!/bin/bash -e
+
+exec chezmoi --persistent-state "{{ .chezmoi.homeDir }}/.config/chezmoi/chezmoistate-private.boltdb" \
+    --source "{{ .chezmoi.privateDir }}" "${@}"

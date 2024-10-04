@@ -1,0 +1,33 @@
+[gcrypt]
+	participants = {{ .gpg.cathyPrimaryKeyFingerprint }} {{ .gpg.cathyEncryptionKeyFingerprint }}
+[gpg]
+	program = {{ .chezmoi.homeDir }}/.config/git/gpg-git-gcrypt.sh
+[user]
+	name = Cathy J. Fitzpatrick
+	email = cathy@cathyjf.com
+	signingkey = {{ .gpg.cathySigningKeyFingerprint }}
+[push]
+	default = simple
+[commit]
+	gpgsign = true
+[tag]
+	forceSignAnnotated = true
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[init]
+	defaultBranch = main
+{{ if eq .chezmoi.arch "arm64" -}}
+[safe]
+	directory = {{ template "brew-root" . }}
+{{ end -}}
+[sendemail]
+	smtpServer = {{ template "brew-root" . }}/bin/msmtp
+[credential]
+	helper =
+	# For unknown reasons, this is installed under /usr/local even on arm64.
+	helper = /usr/local/share/gcm-core/git-credential-manager
+[credential "https://dev.azure.com"]
+	useHttpPath = true

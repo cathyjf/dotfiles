@@ -1,0 +1,11 @@
+# sudo: auth account password session
+{{- $majorVersionMacOS := output "sw_vers" "--productVersion" | mustRegexFind "[0-9]+" | atoi -}}
+{{- if ge $majorVersionMacOS 14 }}
+auth       include        sudo_local
+{{- end }}
+auth       sufficient     pam_tid.so
+auth       sufficient     pam_smartcard.so
+auth       required       pam_opendirectory.so
+account    required       pam_permit.so
+password   required       pam_deny.so
+session    required       pam_permit.so

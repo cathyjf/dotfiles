@@ -1,0 +1,12 @@
+#!{{ template "brew-root" . }}/bin/bash
+set -efuC -o pipefail
+shopt -s inherit_errexit
+args=( "${@}" )
+for (( i = 0; i < ${#}; ++i )); do
+    if [[ ${args[${i}]} = "--secret-keyring" ]] && \
+            [[ ${args[$(( i + 1 ))]:-} = "/dev/null" ]]; then
+        unset "args[${i}]" "args[$(( i + 1 ))]"
+        break
+    fi
+done
+exec gpg "${args[@]}"

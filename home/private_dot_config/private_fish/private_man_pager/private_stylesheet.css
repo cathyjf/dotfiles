@@ -1,0 +1,14 @@
+html {
+    background-color: rgb(24, 26, 27);
+    color: rgb(232, 230, 227);
+}
+pre {
+    font-family: 'SF Mono', SFMono-Regular, ui-monospace, monospace;
+    font-size: 11pt;
+}
+span.bold {
+    font-weight: bold;
+}
+span.underline {
+    text-decoration: underline;
+}

@@ -1,0 +1,18 @@
+#!{{ template "brew-root" . }}/bin/fish --no-config
+
+# This script is referenced in `config.fish`.
+#
+# Run Visual Studio Code if it's installed and this isn't an SSH session.
+# If Visual Studio Code is not installed, run nano.
+# If nano isn't installed either, run pico.
+set -l CODE_EDITOR_PATH "{{ template "brew-root" . }}/bin/code"
+if test -e "$CODE_EDITOR_PATH"; and test -z "$SSH_CLIENT"
+    exec "$CODE_EDITOR_PATH" --wait $argv
+else
+    set -l CODE_EDITOR_PATH "{{ template "brew-root" . }}/bin/nano"
+    if test -e $CODE_EDITOR_PATH
+        exec "$CODE_EDITOR_PATH" $argv
+    else
+        exec /usr/bin/pico $argv
+    end
+end

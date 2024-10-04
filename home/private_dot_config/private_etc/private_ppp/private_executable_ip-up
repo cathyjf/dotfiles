@@ -1,0 +1,6 @@
+#!/bin/sh
+LOGFILE=/var/log/ip-up.log
+/usr/bin/truncate -s 0 $LOGFILE
+
+/sbin/route add -net 10.0.0.10 -interface $1 >> $LOGFILE 2>&1
+/sbin/route add -net cathy-alienware-sunshine -interface $1 >> $LOGFILE 2>&1

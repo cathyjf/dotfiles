@@ -1,0 +1,96 @@
+#!/usr/bin/env fish
+# *****************************************************************************
+# Fish startup script
+# *****************************************************************************
+
+# If we're in the home directory, make sure that it has the correct case.
+if test (string lower $HOME) = (string lower (pwd)) && test $HOME != (pwd)
+    cd $HOME
+end
+
+# Ensure that the correct version of Homebrew appears first in the PATH.
+eval ({{ template "brew-root" . }}/bin/brew shellenv)
+
+# The 077 umask means the following:
+#     - Files are created with rw-------
+#     - Directories are created with rwx------
+#
+# For information on setting a system-wide user umask on macOS, see:
+#     "Set a custom umask in macOS"
+#     <https://support.apple.com/en-us/HT201684>
+#
+if test (umask) != "0077"
+    # The sshd on macOS does not run with umask set to 077, so we'll suppress
+    # this warning if this is an ssh session.
+    if ! test -e "$SSH_TTY"; and isatty
+        echo "==================================================================="
+        echo "WARNING: umask is not globally set to 077."
+        echo
+        echo "To resolve, run:":
+        echo "    sudo launchctl config user umask 077"
+        echo "==================================================================="
+    end
+    # Using the `umask` command is not a substitute for running the macOS
+    # `launchctl` command shown above, but it is better than nothing.
+    umask 077
+end
+
+# If the brew version of perl is installed, set up its environment.
+if test (which perl) = "{{ template "brew-root" . }}/bin/perl"
+    eval (perl -I$HOME/perl5/lib/perl5 -Mlocal::lib=$HOME/perl5)
+end
+
+export EDITOR=(status dirname)"/run_code_editor_and_wait.fish"
+export VISUAL=$EDITOR
+export MANPAGER=(status dirname)"/man_pager.fish"
+export HOMEBREW_NO_ANALYTICS=1
+export GNUTLS_SYSTEM_PRIORITY_FILE="$HOME/.config/gnutls.conf"
+export VCPKG_ROOT="$HOME/git/vcpkg"
+export PERL_LWP_SSL_CA_FILE=(brew --prefix ca-certificates)"/share/ca-certificates/cacert.pem"
+
+# Settings for pass(1).
+export PASSWORD_STORE_DIR="$HOME/passwords"
+export PASSWORD_STORE_SIGNING_KEY={{ .gpg.cathySigningKeyFingerprint }}
+export PASSWORD_STORE_ENABLE_EXTENSIONS=true
+
+# Settings for rclone(1).
+export RCLONE_PASSWORD_COMMAND="pass rclone-local-config-password.txt"
+
+# Suppress the warning message when invoking /bin/bash.
+# See https://support.apple.com/en-us/102360.
+export BASH_SILENCE_DEPRECATION_WARNING=1
+
+# See https://stackoverflow.com/a/66900911.
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
+
+# It is not necessary to invoke `fish_add_path` in this script, because the
+# user path automatically persists across fish sessions. However, I'm keeping
+# this here so that I don't forget that I added this to the path, in case I
+# decide later that I want to remove it.
+fish_add_path (brew --prefix ruby)/bin
+fish_add_path /Library/TeX/texbin
+
+export DEVKITPRO=/opt/devkitpro
+export DEVKITPPC=/opt/devkitpro/devkitppc
+export HOMEBREW_NO_ENV_HINTS=1
+export HOMEBREW_NO_INSECURE_REDIRECT=1
+export HOMEBREW_LIVECHECK_WATCHLIST=$HOME/.brew_livecheck_watchlist
+
+# See https://learn.microsoft.com/en-us/dotnet/core/tools/telemetry.
+export DOTNET_CLI_TELEMETRY_OPTOUT=1
+
+{{ if ne .chezmoi.arch "arm64" -}}
+# Number of threads to use when invoking make(1).
+# I don't want the system to lock up just because brew is compiling code.
+export HOMEBREW_MAKE_JOBS=2
+{{- end }}
+
+# Set up gpg-agent and ssh-agent.
+set -l PARENT_COMMAND (which (ps -o comm= -p (ps -o ppid= -p $fish_pid)) 2> /dev/null)
+if test "$PARENT_COMMAND" != "$(which ssh)"
+    export GPG_TTY=(tty)
+    export GNUPGHOME=$HOME/.gnupg
+    if test -z "$SSH_AUTH_SOCK"; or test -z "$SSH_CLIENT"
+        export SSH_AUTH_SOCK=(gpgconf --list-dirs agent-ssh-socket)
+    end
+end

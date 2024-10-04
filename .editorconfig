@@ -1,0 +1,14 @@
+# https://editorconfig.org
+
+root = true
+
+[*.{cpp,fish,fish.tmpl,js,sh,pp}]
+end_of_line = lf
+insert_final_newline = false
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[home/private_dot_gnupg/private_sshcontrol.tmpl]
+# The `sshcontrol` file does not work correctly unless it ends with a newline.
+insert_final_newline = true

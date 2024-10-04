@@ -1,0 +1,17 @@
+umask = 0o077
+encryption = "gpg"
+{{ $miscDir := trim (output "/bin/realpath" (print .chezmoi.sourceDir "/../misc")) -}}
+textconv = [
+    { pattern = "**/*.plist", command = "plutil", args = ["-convert", "xml1", "-o", "-", "-"] },
+    { pattern = "**/rclone.conf", command = "{{ $miscDir }}/tools/rclone-cat.sh" }
+]
+[gpg]
+    args = ["--quiet", "--default-recipient-self"]
+[diff]
+    exclude = ["scripts"]
+[status]
+    exclude = ["scripts"]
+[data]
+    chezmoi.miscDir = "{{ $miscDir }}"
+    chezmoi.privateDir = "{{ trim (output "/bin/realpath" (print .chezmoi.sourceDir "/../private")) }}"
+    chezmoi.puppetDir = "{{ trim (output "/bin/realpath" (print .chezmoi.sourceDir "/../puppet")) }}"
