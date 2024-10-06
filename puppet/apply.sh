@@ -1,12 +1,9 @@
 #!/bin/bash -e
-gpg_bin="$(command -v gpg)"
-chezmoi_target="$(chezmoi target-path)"
-brew_root="$(chezmoi execute-template '{{ template "brew-root" . }}')"
 PATH=/opt/puppetlabs/puppet/bin:/usr/bin:/bin
 script_dir="$(/bin/realpath "$(/usr/bin/dirname "$0")")"
 conf_dir="${script_dir}/config"
 manifest_dir="$(puppet config print --confdir="${conf_dir}" manifest)"
-readonly gpg_bin chezmoi_target brew_root PATH script_dir conf_dir manifest_dir
+readonly PATH script_dir conf_dir manifest_dir
 
 # shellcheck disable=SC2016
 print_usage() {
@@ -74,7 +71,7 @@ execute_as_user() {
     /usr/bin/sudo -u "${username}" -k "${@}"
 }
 
-extra_env_vars=( "PATH=${PATH}" "FACTERLIB=${script_dir}/facts" )
+extra_env_vars=( "PATH=${PATH}" )
 # Ensure that Ruby is configured to use UTF-8.
 extra_env_vars+=( 'RUBYOPT=-Ku' )
 
@@ -90,9 +87,6 @@ if [[ ${ensure_stdlib} -eq 1 ]]; then
 fi
 
 execute_as_user "${sudo_user}" 'apply the Puppet manifests' \
-    env -i "${extra_env_vars[@]}" \
-    SUDO_UID="${UID}" FACTER_GPG_BIN="${gpg_bin}" FACTER_GNUPGHOME="${GNUPGHOME:?}" \
-    FACTER_BREW_ROOT="${brew_root}" \
-    FACTER_CHEZMOI_TARGET="${chezmoi_target}" \
+    env -i "${extra_env_vars[@]}" SUDO_UID="${UID}" \
     puppet apply --confdir="${conf_dir}" "${puppet_execution[@]}" \
     "${puppet_extra_args[@]}"
