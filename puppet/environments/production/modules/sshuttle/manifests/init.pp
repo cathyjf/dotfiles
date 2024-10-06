@@ -11,20 +11,25 @@ define sshuttle::encrypted_ssh_key {
         $file_title:
     }
     $shell_uid = shell_escape(String($facts['cathy_uid']))
+    $shell_username = shell_escape($facts['cathy_username'])
     $gnupghome = shell_escape($facts['gnupghome'])
     $gpg_bin = shell_escape($facts['gpg_bin'])
     $source = shell_escape("${file_title}.asc")
     $target = shell_escape($file_title)
     exec { "decrypt ${file_title}.asc" :
         require => File[$file_directory, "${file_title}.asc", $file_title],
-        # The point of this complicated formulation is to avoid running the untrusted `gpg`
-        # binary as root, while still writing to a location that Cathy cannot write to.
-        command => "/bin/launchctl asuser ${shell_uid} env GNUPGHOME=${gnupghome} ${gpg_bin} --decrypt ${source} > ${target}",
         # This condition can be run as Cathy without root access because checking the size of
         # the file apparently only requires read access to the enclosing directory, not read
         # access to the file itself.
         onlyif  => "/bin/test `stat -f %z ${target}` -le 0",
         umask   => $sshuttle::default_umask,
+        # The point of this complicated formulation is to avoid running the untrusted `gpg`
+        # binary as root, while still writing to a location that Cathy cannot write to.
+        command => @("EOT")
+            /usr/bin/sudo -u ${shell_username} /bin/launchctl asuser ${shell_uid} \
+                /usr/bin/env GNUPGHOME=${gnupghome} \
+                    ${gpg_bin} --decrypt ${source} > ${target}
+            |-EOT
     }
 }
 
@@ -91,6 +96,7 @@ class sshuttle {
                     '-f', "${home}/sshuttle.tar.bz2", '-x', '-p', '--strip-components', '1',
                     '-C', "${home}/sshuttle"
         ],
+        require     => User[$username],
         subscribe   => File["${home}/sshuttle.tar.bz2"],
         refreshonly => true,
         umask       => $default_umask
