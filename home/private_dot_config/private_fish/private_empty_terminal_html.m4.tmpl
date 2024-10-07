@@ -3,11 +3,11 @@
 <!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'>
 <html xmlns='http://www.w3.org/1999/xhtml'>
 <head>
+    {{ $css_path := print .chezmoi.homeDir "/.config/fish/man_pager/stylesheet.css" -}}
+    {{ $css_hash := trim (output "/bin/bash" "-c" `openssl dgst -sha256 -binary "${1}" | openssl enc -base64` "shell" $css_path) -}}
+    <meta http-equiv='Content-Security-Policy' content="script-src 'none'; style-src 'sha256-{{ $css_hash }}'; default-src 'none'" />
     <meta http-equiv='Content-Type' content='application/xhtml+xml; charset=utf-8' />
-    <link rel='stylesheet' href='{{
-        output (print .chezmoi.miscDir "/tools/encodeURI.js")
-            (print "file://" .chezmoi.homeDir "/.config/fish/man_pager/stylesheet.css")
-    }}' />
+    <style><![CDATA[ {{- include $css_path -}} ]]></style>
     <title>HTML_TITLE</title>
 </head>
 <body>
