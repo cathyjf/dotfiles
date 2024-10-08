@@ -1,0 +1,31 @@
+{{- /* -*- ini -*- */ -}}
+
+{{/*
+# For discussion about managing Mozilla profiles using chezmoi, see:
+#     https://github.com/twpayne/chezmoi/issues/1226
+*/}}
+{{- $install_hash := mozillaInstallHash `/Applications/Thunderbird.app/Contents/MacOS` -}}
+
+{{/*
+# The random prefix in the name of the profile directory is supposedly a
+# security measure, according to this bugzilla ticket from the year 2000:
+#     https://bugzilla.mozilla.org/show_bug.cgi?id=56002
+#
+# Notwithstanding the arguments contained with the ticket, the security benefit
+# of randomizing the directory name is obviously very minimal, so for now I am
+# comfortable hardcoding a prefix into this file.
+*/}}
+{{- $profile_path := `Profiles/r36fm0df.default-release` -}}
+
+[Profile0]
+Name=default-release
+IsRelative=1
+Path={{ $profile_path }}
+
+[General]
+StartWithLastProfile=1
+Version=2
+
+[Install{{ $install_hash }}]
+Default={{ $profile_path }}
+Locked=1

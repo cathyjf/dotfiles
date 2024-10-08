@@ -1,0 +1,10 @@
+// -*- javascript -*-
+user_pref("mail.identity.id1.attachPgpKey", true);
+user_pref("mail.identity.id1.is_gnupg_key_id", true);
+user_pref("mail.identity.id1.last_entered_external_gnupg_key_id", "{{ .gpg.cathyPrimaryKeyFingerprint }}");
+user_pref("mail.identity.id1.openpgp_key_id", "{{ .gpg.cathyPrimaryKeyFingerprint }}");
+user_pref("mail.openpgp.allow_external_gnupg", true);
+user_pref("mail.openpgp.alternative_gpg_path", "{{ template `brew-root` . }}/bin/gpg");
+user_pref("mail.openpgp.fetch_pubkeys_from_gnupg", true);
+user_pref("mailnews.headers.extraAddonHeaders", "autocrypt openpgp");
+user_pref("temp.openpgp.advancedUser", true);
