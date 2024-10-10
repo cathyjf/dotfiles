@@ -59,6 +59,7 @@ class sshuttle {
             * => $default_file_params;
         [$home, "${home}/.ssh", "${home}/sshuttle"]:
             ensure  => directory;
+        ["${home}/logs/cathy-alienware.log", "${home}/logs/cathy-alienware.log.bak"]: ;
         "${home}/sshuttle.tar.bz2":
             source         => 'puppet:///modules/sshuttle/sshuttle-2f3171670c6188eb842912bf0ab7f93dc0da179b.tar.bz2',
             checksum_value => '85810f8caace52d4a00dd0ad77a4b5cd74ad0a32a7e36fa3d6eb87bd858f9c49';
@@ -106,6 +107,7 @@ class sshuttle {
         [
             '/etc/sudoers.d/sshuttle-service',
             "${home}/sshuttle.tar.bz2", "${home}/connect.sh", "${home}/.ssh/config",
+            "${home}/logs/cathy-alienware.log", "${home}/logs/cathy-alienware.log.bak",
             # Note: Only the encrypted SSH keys appear in this list, not the unencrypted ones.
             "${home}/.ssh/known_hosts.asc", "${home}/.ssh/id_ed25519.asc", "${home}/.ssh/id_ed25519.pub.asc"
         ]:
