@@ -4,5 +4,3 @@ Host cathy-alienware
     TCPKeepAlive no
     ServerAliveInterval 5
     ServerAliveCountMax 3
-    Ciphers aes256-gcm@openssh.com
-    MACs hmac-sha2-512,hmac-sha2-256,umac-128@openssh.com

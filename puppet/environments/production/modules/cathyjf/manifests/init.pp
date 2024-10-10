@@ -96,6 +96,9 @@ class cathyjf {
         '/etc/hosts' => {},
         '/etc/pam.d/sudo' => {},
         '/etc/ppp/ip-up' => { mode => 'u=rx,g=r,o=r' },
+        '/etc/ssh/ssh_config.d/100-cathy-alienware.conf' => {
+            source => 'puppet:///modules/cathyjf/ssh_config.d/100-cathy-alienware.conf'
+        },
         '/etc/ssh/sshd_config.d/200-cathyjf.conf' => {},
         '/Library/vhusbd.ini' => { mode => 'u=rw,g=r,o=r' },
         '/Library/LaunchDaemons/com.virtualhere.vhusbd.plist' => {},
@@ -113,14 +116,12 @@ class cathyjf {
                 owner  => 'root',
                 group  => 'wheel',
                 links  => follow,
-                mode   => 'u=r,g=r,o=r';
+                mode   => 'u=r,g=r,o=r',
+                source => "${facts['chezmoi_target']}/.config${filename}";
             $filename:
-                source => "${facts['chezmoi_target']}/.config${filename}",
                 *      => $overrides;
         }
-    }
-    cathyjf::file_readable_by_user {
-        ['/var/root/run-startup-commands', '/etc/sudoers.d/run-startup-commands', "${facts['brew_root']}/etc/smb.conf"]:
+        cathyjf::file_readable_by_user { $filename: }
     }
     include cathyjf::fish_shell
     include cathyjf::macos_nvram
