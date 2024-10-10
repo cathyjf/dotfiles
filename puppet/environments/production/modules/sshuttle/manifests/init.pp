@@ -42,25 +42,10 @@ class sshuttle {
     $default_umask = '0077'
 
     # Set up user and group.
-    user { $username:
-        ensure => present,
-        home   => $home,
-        shell  => '/usr/bin/false',
-        gid    => get_gid($groupname)
-    }
-    group { $groupname:
-        ensure  => present,
-        require => User[$username],
-        members => [$username]
-    }
-    exec { "mark user as hidden: ${username}":
-        require => User[$username],
-        command => ['/usr/bin/dscl', '.',
-            'create', "/Users/${safe_username}", 'IsHidden', '1'],
-        unless  => @("EOT")
-            /bin/test "`/usr/bin/dscl . read /Users/${safe_username} IsHidden`" \
-                = 'dsAttrTypeNative:IsHidden: 1'
-            |-EOT
+    cathyjf::role_account_and_group {
+        $username:
+            groupname => $groupname,
+            home      => $home
     }
 
     $default_file_params = {

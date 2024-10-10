@@ -33,6 +33,32 @@ define cathyjf::file_readable_by_user (
     }
 }
 
+# Define a role account and corresponding group.
+define cathyjf::role_account_and_group (String $groupname, String $home) {
+    $username = $title
+    user { $username:
+        ensure => present,
+        home   => $home,
+        shell  => '/usr/bin/false',
+        gid    => get_gid($groupname)
+    }
+    group { $groupname:
+        ensure  => present,
+        require => User[$username],
+        members => [$username]
+    }
+    $safe_username = sanitized_username($username)
+    exec { "mark user as hidden: ${username}":
+        require => User[$username],
+        command => ['/usr/bin/dscl', '.',
+            'create', "/Users/${safe_username}", 'IsHidden', '1'],
+        unless  => @("EOT")
+            /bin/test "`/usr/bin/dscl . read /Users/${safe_username} IsHidden`" \
+                = 'dsAttrTypeNative:IsHidden: 1'
+            |-EOT
+    }
+}
+
 # Configure the fish shell.
 class cathyjf::fish_shell {
     $fish_shell = "${facts['brew_root']}/bin/fish"
