@@ -112,12 +112,12 @@ class sshuttle {
         ensure       => file,
         content      => template('sshuttle/sudoers.erb'),
         mode         => '0440',
-        validate_cmd => $chezmoi::validate_sudoers
+        validate_cmd => $cathyjf::validate_sudoers
     }
 
     # Ensure that Cathy can read the non-sensitive files in the `_sshuttle` home directory.
     # This may allow `puppet apply` to create a diff without root access.
-    chezmoi::file_readable_by_user {
+    cathyjf::file_readable_by_user {
         [
             '/etc/sudoers.d/sshuttle-service',
             "${home}/sshuttle.tar.bz2", "${home}/connect.sh", "${home}/.ssh/config",

@@ -1,5 +1,5 @@
 # Use macOS ACLs to ensure that a particular file is readable by a given user.
-define chezmoi::file_readable_by_user (
+define cathyjf::file_readable_by_user (
     String $username = $facts['cathy_username'],
     Boolean $is_directory = false
 ) {
@@ -13,8 +13,8 @@ define chezmoi::file_readable_by_user (
             })
     ]
     $parent = dirname($title)
-    if !defined(Chezmoi::File_Readable_By_User[$parent]) {
-        create_resources('chezmoi::file_readable_by_user', {
+    if !defined(Cathyjf::File_Readable_By_User[$parent]) {
+        create_resources('cathyjf::file_readable_by_user', {
             $parent => {
                 username     => $username,
                 is_directory => true
@@ -24,7 +24,7 @@ define chezmoi::file_readable_by_user (
     $file_requirements = defined(File[$title]) ? { true => [File[$title]], false => [] }
     $requirements = $file_requirements + ($parent ? {
         '/'     => [],
-        default => [Chezmoi::File_Readable_By_User[$parent]]
+        default => [Cathyjf::File_Readable_By_User[$parent]]
     })
     exec { "ensure ${username} can ${acl} ${title}":
         require => $requirements,
@@ -34,7 +34,7 @@ define chezmoi::file_readable_by_user (
 }
 
 # Configure the fish shell.
-class chezmoi::fish_shell {
+class cathyjf::fish_shell {
     $fish_shell = "${facts['brew_root']}/bin/fish"
     $sanitized_username = sanitized_username($facts['cathy_username'])
     exec { "add ${fish_shell} to /etc/shells":
@@ -50,7 +50,7 @@ class chezmoi::fish_shell {
 }
 
 # Configure certain macOS nvram variables.
-class chezmoi::macos_nvram {
+class cathyjf::macos_nvram {
     # If macOS is configured to use external bluetooth adapters when they are plugged in
     # (which is the default), this causes problems when attempting to use VirtualHere USB
     # to share USB bluetooth adapters on the network. Setting this nvram variable prevents
@@ -63,8 +63,8 @@ class chezmoi::macos_nvram {
     }
 }
 
-# Class used for deploying config files managed by chezmoi.
-class chezmoi {
+# Class used for deploying root config files to machines managed by Cathy.
+class cathyjf {
     $validate_sudoers = '/usr/sbin/visudo -c -q -f %'
     Hash({
         '/etc/hosts' => {},
@@ -93,9 +93,10 @@ class chezmoi {
                 *      => $overrides;
         }
     }
-    chezmoi::file_readable_by_user {
+    cathyjf::file_readable_by_user {
         ['/var/root/run-startup-commands', '/etc/sudoers.d/run-startup-commands', "${facts['brew_root']}/etc/smb.conf"]:
     }
-    include chezmoi::fish_shell
-    include chezmoi::macos_nvram
+    include cathyjf::fish_shell
+    include cathyjf::macos_nvram
+    include sshuttle
 }

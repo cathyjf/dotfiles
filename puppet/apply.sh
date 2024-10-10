@@ -16,8 +16,6 @@ print_usage() {
     echo '           Don'"'"'t print the `puppet` commands before executing them.'
     echo '       --without-root'
     echo '           Don'"'"'t become root when invoking `puppet apply`.'
-    echo '       --only-chezmoi'
-    echo '           Execute only the chezmoi-related manifests.'
     echo '       --ensure-stdlib'
     echo '           Ensure that the Puppet standard library is installed.'
     echo '       --debug'
@@ -30,7 +28,7 @@ print_usage() {
 
 sudo_user='root'
 suppress_explanations=0
-puppet_execution=( "${manifest_dir}" )
+puppet_execution=( '-e' 'include cathyjf' )
 puppet_extra_args=()
 ensure_stdlib=0
 while [[ ${#} -gt 0 ]]; do
@@ -43,8 +41,6 @@ while [[ ${#} -gt 0 ]]; do
             suppress_explanations=1 ;;
         --without-root)
             sudo_user="${USER}" ;;
-        --only-chezmoi)
-            puppet_execution=( '-e' 'include chezmoi' ) ;;
         --ensure-stdlib)
             ensure_stdlib=1 ;;
         --debug | --detailed-exitcodes | --noop | --show_diff | --verbose)
