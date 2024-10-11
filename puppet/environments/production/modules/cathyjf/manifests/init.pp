@@ -64,7 +64,7 @@ class cathyjf::fish_shell {
     $fish_shell = "${facts['brew_root']}/bin/fish"
     $sanitized_username = sanitized_username($facts['cathy_username'])
     exec { "add ${fish_shell} to /etc/shells":
-        command => "/bin/echo ${shell_escape($fish_shell)} >> /etc/shells",
+        command => ['/bin/bash', '-c', 'echo "$1" >> /etc/shells', 'argv0', $fish_shell],
         unless  => [['/usr/bin/grep', '-F', '-x', '-q', $fish_shell, '/etc/shells']]
     } -> exec { "set shell to ${fish_shell} for ${facts['cathy_username']}":
         command => ['/usr/bin/chsh', '-s', $fish_shell, $facts['cathy_username']],

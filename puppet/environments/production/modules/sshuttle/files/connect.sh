@@ -48,7 +48,10 @@ readonly hostname=cathy-alienware
 /bin/mkdir -p ../logs
 log_filename="$(/bin/realpath ../logs)/${hostname}.log"
 readonly log_filename
-[[ -f ${log_filename} ]] && /bin/mv -f "${log_filename}" "${log_filename}.bak"
+[[ -f ${log_filename} ]] && {
+    /bin/cp -p -f "${log_filename}" "${log_filename}.bak"
+    /usr/bin/truncate -s 0 "${log_filename}"
+}
 
 echo "Connecting to ${hostname} via sshuttle..."
 (

@@ -10,26 +10,33 @@ define sshuttle::encrypted_ssh_key {
             source => "puppet:///modules/sshuttle/ssh/keys/${title}.asc";
         $file_title:
     }
-    $shell_uid = shell_escape(String($facts['cathy_uid']))
-    $shell_username = shell_escape($facts['cathy_username'])
-    $gnupghome = shell_escape($facts['gnupghome'])
-    $gpg_bin = shell_escape($facts['gpg_bin'])
-    $source = shell_escape("${file_title}.asc")
-    $target = shell_escape($file_title)
     exec { "decrypt ${file_title}.asc" :
         require => File[$file_directory, "${file_title}.asc", $file_title],
         # This condition can be run as Cathy without root access because checking the size of
         # the file apparently only requires read access to the enclosing directory, not read
         # access to the file itself.
-        onlyif  => "/bin/test `stat -f %z ${target}` -le 0",
+        onlyif  => [[
+            '/bin/bash', '-c', '[[ $(/usr/bin/stat -f %z "$1") -le 0 ]]', 'argv0', $file_title
+        ]],
         umask   => $sshuttle::default_umask,
-        # The point of this complicated formulation is to avoid running the untrusted `gpg`
-        # binary as root, while still writing to a location that Cathy cannot write to.
-        command => @("EOT")
-            /usr/bin/sudo -u ${shell_username} /bin/launchctl asuser ${shell_uid} \
-                /usr/bin/env GNUPGHOME=${gnupghome} \
-                    ${gpg_bin} --decrypt ${source} > ${target}
-            |-EOT
+        command => [
+            '/bin/bash', '-c', (
+                # The point of this formulation is to avoid running the untrusted `gpg` binary
+                # as root, while still writing to a location to which only the `_sshuttle`
+                # user can write. The curly braces are used to make the logic clearer.
+                @(EOT)
+                {
+                    /usr/bin/sudo -u "$1" /bin/launchctl asuser "$2" \
+                        /usr/bin/env -i GNUPGHOME="$3" "$4" --decrypt "$5"
+                } | {
+                    /usr/bin/sudo -u "$6" /bin/cat > "$7"
+                }
+                |-EOT
+            ), 'argv0',
+            $facts['cathy_username'], String($facts['cathy_uid']),
+            $facts['gnupghome'], $facts['gpg_bin'], "${file_title}.asc",
+            $sshuttle::default_file_params['owner'], $file_title
+        ]
     }
 }
 
@@ -37,7 +44,6 @@ define sshuttle::encrypted_ssh_key {
 class sshuttle {
     $home = '/var/sshuttle'
     $username = '_sshuttle'
-    $safe_username = sanitized_username($username)
     $groupname = '_sshuttle'
     $default_umask = '0077'
 
@@ -88,9 +94,10 @@ class sshuttle {
         umask       => $default_umask
     }
 
-    # This `$sudoers_prefix_sshuttle` variable is referenced in the `sshuttle/sudoers.erb` template.
+    # These two variables are referenced in the `sshuttle/sudoers.erb` template.
+    $sudoers_username = sanitized_username($username)
     $sudoers_prefix_sshuttle = @("EOT")
-        ${safe_username} ALL = (root) NOPASSWD: /usr/bin/env PYTHONPATH=/private/var/sshuttle/sshuttle \
+        ${sudoers_username} ALL = (root) NOPASSWD: /usr/bin/env PYTHONPATH=/private/var/sshuttle/sshuttle \
             /Applications/Xcode.app/Contents/Developer/usr/bin/python3 \
             /private/var/sshuttle/sshuttle/sshuttle/__main__.py
         |-EOT
