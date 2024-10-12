@@ -63,7 +63,7 @@ class sshuttle {
     file {
         default:
             * => $default_file_params;
-        [$home, "${home}/.ssh", "${home}/sshuttle"]:
+        [$home, "${home}/.ssh", "${home}/sshuttle", "${home}/logs"]:
             ensure  => directory;
         ["${home}/logs/cathy-alienware.log", "${home}/logs/cathy-alienware.log.bak"]: ;
         "${home}/sshuttle.tar.bz2":

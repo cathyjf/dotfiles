@@ -34,19 +34,24 @@ define cathyjf::file_readable_by_user (
 }
 
 # Define a role account and corresponding group.
-define cathyjf::role_account_and_group (String $groupname, String $home) {
+define cathyjf::role_account_and_group (
+    String $groupname,
+    String $home,
+    String $shell = '/usr/bin/false'
+) {
     $username = $title
+    group { $groupname:
+        members => ((get_uid($username) != Undef) ? {
+            true  => [$username],
+            false => []
+        })
+    }
     user { $username:
         ensure => present,
         home   => $home,
-        shell  => '/usr/bin/false',
-        gid    => get_gid($groupname)
-    }
-    group { $groupname:
-        ensure  => present,
-        require => User[$username],
-        members => [$username]
-    }
+        shell  => $shell,
+        gid    => $groupname
+    } -> cathyjf::ensure_group_contains_user($groupname, $username)
     $safe_username = sanitized_username($username)
     exec { "mark user as hidden: ${username}":
         require => User[$username],
@@ -56,6 +61,15 @@ define cathyjf::role_account_and_group (String $groupname, String $home) {
             /bin/test "`/usr/bin/dscl . read /Users/${safe_username} IsHidden`" \
                 = 'dsAttrTypeNative:IsHidden: 1'
             |-EOT
+    }
+}
+
+# Declare that a particular group has a particular member
+function cathyjf::ensure_group_contains_user(String $groupname, String $username) {
+    exec { "ensure ${username} is a member of ${groupname}":
+        require => Group[$groupname],
+        command => ['/usr/sbin/dseditgroup', '-o', 'edit', '-a', $username, '-t', 'user', $groupname],
+        unless  => [['/usr/sbin/dseditgroup', '-o', 'checkmember', '-m', $username,  $groupname]]
     }
 }
 
