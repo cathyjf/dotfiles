@@ -108,7 +108,7 @@ class cathyjf {
     $validate_sudoers = '/usr/sbin/visudo -c -q -f %'
     Hash({
         '/etc/hosts' => {},
-        '/etc/pam.d/sudo' => {},
+        '/etc/pam.d/sudo_local' => {},
         '/etc/ppp/ip-up' => { mode => 'u=rx,g=r,o=r' },
         '/etc/ssh/ssh_config.d/100-cathy-alienware.conf' => {
             source => 'puppet:///modules/cathyjf/ssh_config.d/100-cathy-alienware.conf'
