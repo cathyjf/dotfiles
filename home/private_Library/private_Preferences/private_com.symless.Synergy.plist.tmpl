@@ -1,0 +1,105 @@
+{{- /* -*- xml -*- */ -}}
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>activationHasRun</key>
+	<true/>
+	<key>autoConfig</key>
+	<false/>
+	<key>autoConfigPrompted</key>
+	<true/>
+	<key>autoConfigServer</key>
+	<string></string>
+	<key>autoHide</key>
+	<true/>
+	<key>clientHostMode</key>
+	<false/>
+	<key>closeToTray</key>
+	<true/>
+	<key>configFile</key>
+	<string>{{ .chezmoi.homeDir }}/.config/synergy/synergy.conf</string>
+	<key>cryptoEnabled</key>
+	<true/>
+	<key>edition</key>
+	<integer>1</integer>
+	<key>elevateMode</key>
+	<false/>
+	<key>elevateModeEnum</key>
+	<integer>0</integer>
+	<key>eliteBackersUrl</key>
+	<string>https://api2.prod.symless.com/credits/elite-backers</string>
+	<key>enableService</key>
+	<false/>
+	<key>groupClientChecked</key>
+	<false/>
+	<key>groupServerChecked</key>
+	<true/>
+	<key>guid</key>
+	<string>
+		{{- .synergy.guid -}}
+	</string>
+	<key>initiateConnectionFromServer</key>
+	<false/>
+	<key>interface</key>
+	<string>localhost</string>
+	<key>invertScrollDirection</key>
+	<false/>
+	<key>language</key>
+	<string>en</string>
+	<key>languageSync</key>
+	<false/>
+	<key>lastExpiringWarningTime</key>
+	<integer>0</integer>
+	<key>lastVersion</key>
+	<string>1.15.1</string>
+	<key>licenseNextCheck</key>
+	<integer>0</integer>
+	<key>licenseRegistryUrl</key>
+	<string>https://api2.prod.symless.com/license/register</string>
+	<key>loadFromSystemScope</key>
+	<false/>
+	<key>logFilename</key>
+	<string>/var/log/synergy.log</string>
+	<key>logLevel</key>
+	<integer>3</integer>
+	<key>logLevel2</key>
+	<integer>0</integer>
+	<key>logToFile</key>
+	<false/>
+	<key>minimizeToTray</key>
+	<true/>
+	<key>port</key>
+	<integer>
+		{{- .synergy.serverPort -}}
+	</integer>
+	<key>preventSleep</key>
+	<false/>
+	<key>screenName</key>
+	<string>
+		{{- .synergy.screenName -}}
+	</string>
+	<key>serialKey</key>
+	<string>
+		{{- .synergy.serialKey -}}
+	</string>
+	<key>serverClientMode</key>
+	<false/>
+	<key>serverHostname</key>
+	<string></string>
+	<key>showCloseReminder</key>
+	<false/>
+	<key>showDevThanks</key>
+	<false/>
+	<key>startedBefore</key>
+	<true/>
+	<key>useExternalConfig</key>
+	<true/>
+	<key>useInternalConfig</key>
+	<false/>
+	<key>userMenuExtraStyle</key>
+	<integer>0</integer>
+	<key>wizardLastRun</key>
+	<integer>8</integer>
+</dict>
+</plist>
