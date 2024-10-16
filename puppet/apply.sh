@@ -16,6 +16,8 @@ print_usage() {
     echo '           Don'"'"'t print the `puppet` commands before executing them.'
     echo '       --without-root'
     echo '           Don'"'"'t become root when invoking `puppet apply`.'
+    echo '       --no-color'
+    echo '           Don'"'"'t output ANSI escape sequences for colors.'
     echo '       --ensure-stdlib'
     echo '           Ensure that the Puppet standard library is installed.'
     echo '       --debug'
@@ -41,6 +43,8 @@ while [[ ${#} -gt 0 ]]; do
             suppress_explanations=1 ;;
         --without-root)
             sudo_user="${USER}" ;;
+        --no-color)
+            puppet_extra_args+=( '--color=false' ) ;;
         --ensure-stdlib)
             ensure_stdlib=1 ;;
         --debug | --detailed-exitcodes | --noop | --show_diff | --verbose)

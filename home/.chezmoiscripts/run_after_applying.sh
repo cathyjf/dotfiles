@@ -1,16 +1,29 @@
 #!/bin/bash
+set -efuC -o pipefail
 
 echo 'Finished application of public dotfiles.'
 
-chezmoi_source_path="${CHEZMOI_SOURCE_DIR:?}"
 chezmoi_target_path="${CHEZMOI_HOME_DIR:?}"
 chezmoi_misc_path="$(chezmoi execute-template '{{ .chezmoi.miscDir }}')" || exit 1
+readonly chezmoi_target_path chezmoi_misc_path
 
 source "${chezmoi_misc_path}/tools/set-common-variables.sh"
 : "${chezmoi_encrypted_files_excluded:?}"
 
-declare BREW_ROOT
-BREW_ROOT=$(chezmoi execute-template '{{ template "brew-root" . }}')
+BREW_ROOT=$(chezmoi execute-template '{{ template "brew-root" . }}') || exit 1
+readonly BREW_ROOT
+
+tput() {
+    # Invoke `tput` if and only if stdout is a terminal.
+    if [[ -t 1 ]]; then
+        command tput "${@}"
+    fi
+}
+
+# Disable automatic line wrap until this script exits. This is required for the
+# fancy cursor manipulation in `apply_operation` to work correctly.
+tput rmam
+trap 'tput smam' 0
 
 declare __lines_printed
 indent_text_inner() {
@@ -55,9 +68,13 @@ apply_operation() {
     printf 'Completed operation: %s (%.2f s).\n' "${@}" \
         "$(bc <<< "$(unix_epoch) - ${initial_time}")"
 
+    # Move the cusor back down by `__lines_printed` lines.
     if [[ ${__lines_printed} -gt 0 ]]; then
-        # Move the cusor back down by `__lines_printed` lines.
         tput cud $(( __lines_printed ))
+    fi
+    # If stdout isn't a terminal, print an extra newline.
+    if [[ ! -t 1 ]]; then
+        printf '\n'
     fi
 }
 
@@ -83,14 +100,14 @@ maybe_test_gpg_key() {
 }
 
 test_gpg_secret_key_backups() {
-    if tmutil isexcluded "$HOME/.gnupg/private-keys-v1.d" | grep -q "\[Excluded\]"; then
+    if tmutil isexcluded "${HOME}/.gnupg/private-keys-v1.d" | grep -q "\[Excluded\]"; then
         return
     fi
     echo "Warning: Time Machine is currently backing up your GPG secret keys."
     echo "This may be undesirable."
     echo
     echo "To disable this behavior, run:"
-    echo "    sudo tmutil addexclusion -p $HOME/.gnupg/private-keys-v1.d"
+    echo "    sudo tmutil addexclusion -p ${HOME}/.gnupg/private-keys-v1.d"
 }
 
 has_hardened_runtime() {
@@ -98,36 +115,35 @@ has_hardened_runtime() {
 }
 
 ensure_hardened_runtime() {
-    if [ -x "$1" ] && ! has_hardened_runtime "$1"; then
-        echo "Warning: The $(basename "$1") binary should use the hardened runtime environment but does not."
+    if [[ -x ${1} ]] && ! has_hardened_runtime "${1}"; then
+        echo "Warning: The $(basename "${1}") binary should use the hardened runtime environment but does not."
         echo "To fix this, try:"
-        local IDENTITY
-        IDENTITY=$(security find-identity -v -p codesigning | grep -o "[A-F0-9]\{25,\}")
-        echo "    codesign -f --options runtime -s \"$IDENTITY\" \"$1\""
+        local identity
+        identity=$(security find-identity -v -p codesigning | grep -o "[A-F0-9]\{25,\}")
+        echo "    codesign -f --options runtime -s \"${identity}\" \"${1}\""
     fi
 }
 
 test_pinentry_symlink() {
-    local PINENTRY_SYMLINK="$BREW_ROOT/opt/pinentry/bin/pinentry"
-    local PINENTRY_MAC_BINARY="$BREW_ROOT/bin/pinentry-mac"
-    if [ "$(readlink -- "$PINENTRY_SYMLINK")" != "$PINENTRY_MAC_BINARY" ]; then
+    local pinentry_symlink="${BREW_ROOT}/opt/pinentry/bin/pinentry"
+    local pinentry_mac_binary="${BREW_ROOT}/bin/pinentry-mac"
+    if [[ $(readlink -- "${pinentry_symlink}") != "${pinentry_mac_binary}" ]]; then
         echo "If pinentry-touchid isn't working correctly, try:"
-        echo "    ln -f -s $PINENTRY_MAC_BINARY $PINENTRY_SYMLINK"
+        echo "    ln -f -s ${pinentry_mac_binary} ${pinentry_symlink}"
     fi
 }
 
 test_acrobat_extension() {
-    local OFFICE_DIRECTORY
-    OFFICE_DIRECTORY="${chezmoi_target_path}"/Library/Group\ Containers/UBF8T346G9.Office
-    local ACROBAT_OFFICE_EXTENSION=$OFFICE_DIRECTORY/User\ Content.localized/Startup.localized/Word/linkCreation.dotm
-    if [ -f "$ACROBAT_OFFICE_EXTENSION" ]; then
+    local office_directory="${chezmoi_target_path}"/Library/Group\ Containers/UBF8T346G9.Office
+    local acrobat_extension="${office_directory}"/User\ Content.localized/Startup.localized/Word/linkCreation.dotm
+    if [[ -f ${acrobat_extension} ]]; then
         echo "The Adobe Acrobat extension for Microsoft Office is currently installed."
         echo "This low-quality extension causes error messages to appear when loading Word documents."
         echo
         echo "There is no obvious downside to removing the extension."
         echo
         echo "To remove the Acrobat extension for Office, run:"
-        echo "    rm \"$ACROBAT_OFFICE_EXTENSION\""
+        echo "    rm \"${acrobat_extension}\""
     fi
 }
 
@@ -180,42 +196,30 @@ diff_puppet_chezmoi() {
     echo 'Puppet wants to apply the following changes (if any) to root configuration files:'
     chezmoi_puppet_path="$(chezmoi execute-template '{{ .chezmoi.puppetDir }}')" || return 1
     apply_path="${chezmoi_puppet_path}"/apply.sh
-    indent_text "${apply_path}" --without-root --noop --show_diff --suppress-explanations
+    indent_text "${apply_path}" --without-root --noop --show_diff --suppress-explanations --no-color
     echo 'To apply the Puppet manifests (if needed), run:'
     echo "    ${apply_path}"
 }
 
 maybe_apply_private_dotfiles() {
     [[ ${chezmoi_encrypted_files_excluded} -ne 0 ]] && return
+    : "${chezmoi_arg_array:?}"
     echo 'This will require decrypting files contained within the chezmoi repository, so you'
     echo 'will be prompted to use your GPG key, unless gpg-agent has your key cached because'
     echo 'you used the key recently for something else.'
     "${chezmoi_target_path}/.config/cathy/chezmoi-private.sh" "${chezmoi_arg_array[@]:1}"
 }
 
-# Enable hidden files in finder, unless they're already enabled.
-if ! FINDER_HIDDEN_FILES=$(defaults read com.apple.finder AppleShowAllFiles 2> /dev/null) || \
-        [ "$FINDER_HIDDEN_FILES" -ne 1 ]; then
-    defaults write com.apple.finder AppleShowAllFiles -bool true
-    echo "Finder has been configured to show hidden files."
-    while true; do
-        read -r -p "Restart Finder.app now? [y/n] " RESTART_FINDER
-        case $RESTART_FINDER in
-            [Yy])
-                osascript -e 'quit app "Finder"'
-                break
-                ;;
-            [Nn])
-                echo "    To restart Finder.app later, run:"
-                echo "        osascript -e 'quit app \"Finder\"'"
-                break
-                ;;
-            * )
-                echo "    Please choose a valid option."
-        esac
-    done
-    printf "\n***\n\n"
-fi
+apply_finder_defaults() {
+    # Enable hidden files in finder, unless they're already enabled.
+    # shellcheck disable=SC2155
+    local hidden_files="$(defaults read com.apple.finder AppleShowAllFiles 2> /dev/null || echo 0)"
+    if [[ "${hidden_files}" -ne 1 ]]; then
+        defaults write com.apple.finder AppleShowAllFiles -bool true
+        echo 'Finder has been configured to show hidden files and will now restart.'
+        osascript -e 'quit app "Finder"'
+    fi
+}
 
 # Samba server.
 # TODO: Make this indelibility test actually be useful.
@@ -231,6 +235,8 @@ apply_operation maybe_test_gpg_key
 # apply_operation test_gpg_secret_key_backups
 apply_operation test_pinentry_symlink
 apply_operation test_acrobat_extension
+apply_operation apply_finder_defaults
+
 # TODO: Hardening these runtimes is currently not a particularly large security improvement.
 #       I need to come up with a bettter solution for this.
 # apply_operation ensure_hardened_runtime "$BREW_ROOT/bin/pinentry-touchid"
