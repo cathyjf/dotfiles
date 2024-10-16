@@ -8,29 +8,9 @@ if test (string lower $HOME) = (string lower (pwd)) && test $HOME != (pwd)
     cd $HOME
 end
 
-# The 077 umask means the following:
-#     - Files are created with rw-------
-#     - Directories are created with rwx------
-#
-# For information on setting a system-wide user umask on macOS, see:
-#     "Set a custom umask in macOS"
-#     <https://support.apple.com/en-us/HT201684>
-#
-if test (umask) != '0077'
-    # The sshd on macOS does not run with umask set to 077, so we'll suppress
-    # this warning if this is an ssh session.
-    if ! test -e "$SSH_TTY" && isatty
-        echo "==================================================================="
-        echo "WARNING: umask is not globally set to 077."
-        echo
-        echo "To resolve, run:":
-        echo "    sudo launchctl config user umask 077"
-        echo "==================================================================="
-    end
-    # Using the `umask` command is not a substitute for running the macOS
-    # `launchctl` command shown above, but it is better than nothing.
-    umask 077
-end
+# Set the default umask.
+# This helps ensure that files will not be readable by other users or groups.
+umask 077 # ~(u=rwx,go=)
 
 # Set up the environment for the brew version of perl, if necessary.
 set -q PERL5LIB || begin

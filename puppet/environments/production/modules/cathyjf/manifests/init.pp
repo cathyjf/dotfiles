@@ -105,24 +105,34 @@ class cathyjf::macos_nvram {
 
 # Class used for deploying root config files to machines managed by Cathy.
 class cathyjf {
+    $validate_plist = '/usr/bin/plutil %'
     $validate_sudoers = '/usr/sbin/visudo -c -q -f %'
     Hash({
         '/etc/hosts' => {},
         '/etc/pam.d/sudo_local' => {},
-        '/etc/ppp/ip-up' => { mode => 'u=rx,g=r,o=r' },
+        '/etc/ppp/ip-up' => { mode => 'u=rx,go=r' },
         '/etc/ssh/ssh_config.d/100-cathy-alienware.conf' => {
             source => 'puppet:///modules/cathyjf/ssh_config.d/100-cathy-alienware.conf'
         },
         '/etc/ssh/sshd_config.d/200-cathyjf.conf' => {},
-        '/Library/vhusbd.ini' => { mode => 'u=rw,g=r,o=r' },
-        '/Library/LaunchDaemons/com.virtualhere.vhusbd.plist' => {},
-        '/var/root/run-startup-commands' => { mode => 'u=rwx,g=,o=' },
+        '/Library/vhusbd.ini' => { mode => 'u=rw,go=r' },
+        '/Library/LaunchDaemons/com.virtualhere.vhusbd.plist' => {
+            validate_cmd => $validate_plist
+        },
+        '/var/db/com.apple.xpc.launchd/config/user.plist' => {
+            source       => 'puppet:///modules/cathyjf/launchd-user.plist',
+            mode         => 'u=rw,go=',
+            validate_cmd => $validate_plist
+        },
+        '/var/root/run-startup-commands' => { mode => 'u=rwx,go=' },
         '/etc/sudoers.d/run-startup-commands' => {
             mode         => 'u=r,g=r,o=',
             validate_cmd => $validate_sudoers
         },
-        "${facts['brew_root']}/etc/smb.conf" => { mode => 'u=r,g=,o=' },
-        '/Library/LaunchDaemons/cathy.samba-dot-org-smbd.plist' => {}
+        "${facts['brew_root']}/etc/smb.conf" => { mode => 'u=r,go=' },
+        '/Library/LaunchDaemons/cathy.samba-dot-org-smbd.plist' => {
+            validate_cmd => $validate_plist
+        }
     }).each |$filename, $overrides| {
         file {
             default:
@@ -130,7 +140,7 @@ class cathyjf {
                 owner  => 'root',
                 group  => 'wheel',
                 links  => follow,
-                mode   => 'u=r,g=r,o=r',
+                mode   => 'ugo=r',
                 source => "${facts['chezmoi_target']}/.config${filename}";
             $filename:
                 *      => $overrides;

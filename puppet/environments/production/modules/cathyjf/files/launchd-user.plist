@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- -*- xml -*- -->
+<plist version="1.0">
+<dict>
+    <!--
+    The decimal umask 63 is equal to the octal umask 077, i.e., ~(u=rwx,go=).
+
+    For information on what this setting controls, see:
+        "Set a custom umask in macOS" <https://support.apple.com/en-us/101914>.
+    -->
+    <key>Umask</key>
+    <integer>63</integer>
+</dict>
+</plist>
