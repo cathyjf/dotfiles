@@ -139,15 +139,24 @@ verify_file_is_indelible() {
     fi
 }
 
+unix_epoch() {
+    # The `gdate` command is provided by the brew `coreutils` formula.
+    gdate +%s.%N
+}
+
 diff_puppet_chezmoi() {
+    local initial_time chezmoi_puppet_path apply_path
+    initial_time="$(unix_epoch)"
     echo "Puppet wants to apply the following changes (if any) to root configuration files:"
-    chezmoi_puppet_path="$(chezmoi execute-template '{{ .chezmoi.puppetDir }}')" || exit 1
+    chezmoi_puppet_path="$(chezmoi execute-template '{{ .chezmoi.puppetDir }}')" || return 1
     apply_path="${chezmoi_puppet_path}"/apply.sh
     while IFS='' read -r line; do
         printf '    %s\n' "${line}"
     done < <(
         "${apply_path}" --without-root --noop --show_diff --suppress-explanations
     )
+    printf 'The above Puppet execution required %.2f seconds.\n' \
+        "$(bc <<< "$(unix_epoch) - ${initial_time}")"
     echo 'To apply the Puppet manifests (if needed), run:'
     echo "    ${apply_path}"
 }
