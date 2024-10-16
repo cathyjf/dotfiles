@@ -1,28 +1,63 @@
 #!/bin/bash
 
+echo 'Finished application of public dotfiles.'
+
 chezmoi_source_path="${CHEZMOI_SOURCE_DIR:?}"
 chezmoi_target_path="${CHEZMOI_HOME_DIR:?}"
 chezmoi_misc_path="$(chezmoi execute-template '{{ .chezmoi.miscDir }}')" || exit 1
 
 source "${chezmoi_misc_path}/tools/set-common-variables.sh"
 : "${chezmoi_encrypted_files_excluded:?}"
-if [[ ${chezmoi_encrypted_files_excluded} -eq 0 ]]; then
-    echo '    This will require decrypting files contained within the chezmoi repository, so you'
-    echo '    will be prompted to use your GPG key, unless gpg-agent has your key cached because'
-    echo '    you used the key recently for something else.'
-    "${chezmoi_target_path}/.config/cathy/chezmoi-private.sh" "${chezmoi_arg_array[@]:1}"
-fi
-
-echo 'Finished application of changes to user dotfiles.'
 
 declare BREW_ROOT
 BREW_ROOT=$(chezmoi execute-template '{{ template "brew-root" . }}')
 
-queue() {
-    local entry
-    entry="$("${@}")"
-    if [ -n "${entry}" ]; then
-        printf "\n***\n\n%s\n" "${entry}"
+declare __lines_printed
+indent_text_inner() {
+    local -r IFS=''
+    local -r include_final_newline=$1
+    local line
+    __lines_printed=0
+    while read -r line; do
+        printf '    %s\n' "${line}"
+        (( ++__lines_printed ))
+    done < <("${@:2}")
+    if [[ ${include_final_newline} -eq 1 && ${__lines_printed} -gt 0 ]]; then
+        printf '\n'
+        (( ++__lines_printed ))
+    fi
+}
+
+indent_text_with_final_newline() {
+    indent_text_inner 1 "${@}"
+}
+
+indent_text() {
+    indent_text_inner 0 "${@}"
+}
+
+unix_epoch() {
+    # The `gdate` command is provided by the brew `coreutils` formula.
+    gdate +%s.%N
+}
+
+apply_operation() {
+    local initial_time
+    initial_time="$(unix_epoch)"
+    printf 'Running operation: %s.\n' "${@}"
+    indent_text_with_final_newline "${@}"
+
+    # Move the cursor up by `__lines_printed + 1` lines.
+    # See https://stackoverflow.com/a/53820485/1976484.
+    tput cuu $(( __lines_printed + 1 ))
+
+    tput el # Clear the line to the right of the cursor.
+    printf 'Completed operation: %s (%.2f s).\n' "${@}" \
+        "$(bc <<< "$(unix_epoch) - ${initial_time}")"
+
+    if [[ ${__lines_printed} -gt 0 ]]; then
+        # Move the cusor back down by `__lines_printed` lines.
+        tput cud $(( __lines_printed ))
     fi
 }
 
@@ -32,7 +67,7 @@ make_windows_file_history() {
     fi
 }
 
-test_gpg_key() {
+maybe_test_gpg_key() {
     if [[ ${chezmoi_encrypted_files_excluded} -eq 1 ]]; then
         return
     elif ! "${chezmoi_misc_path}/gpg/is-key-different.sh"; then
@@ -139,26 +174,23 @@ verify_file_is_indelible() {
     fi
 }
 
-unix_epoch() {
-    # The `gdate` command is provided by the brew `coreutils` formula.
-    gdate +%s.%N
-}
-
 diff_puppet_chezmoi() {
-    local initial_time chezmoi_puppet_path apply_path
-    initial_time="$(unix_epoch)"
-    echo "Puppet wants to apply the following changes (if any) to root configuration files:"
+    local chezmoi_puppet_path apply_path
+    echo 'Computing the Puppet diff will take several seconds.'
+    echo 'Puppet wants to apply the following changes (if any) to root configuration files:'
     chezmoi_puppet_path="$(chezmoi execute-template '{{ .chezmoi.puppetDir }}')" || return 1
     apply_path="${chezmoi_puppet_path}"/apply.sh
-    while IFS='' read -r line; do
-        printf '    %s\n' "${line}"
-    done < <(
-        "${apply_path}" --without-root --noop --show_diff --suppress-explanations
-    )
-    printf 'The above Puppet execution required %.2f seconds.\n' \
-        "$(bc <<< "$(unix_epoch) - ${initial_time}")"
+    indent_text "${apply_path}" --without-root --noop --show_diff --suppress-explanations
     echo 'To apply the Puppet manifests (if needed), run:'
     echo "    ${apply_path}"
+}
+
+maybe_apply_private_dotfiles() {
+    [[ ${chezmoi_encrypted_files_excluded} -ne 0 ]] && return
+    echo 'This will require decrypting files contained within the chezmoi repository, so you'
+    echo 'will be prompted to use your GPG key, unless gpg-agent has your key cached because'
+    echo 'you used the key recently for something else.'
+    "${chezmoi_target_path}/.config/cathy/chezmoi-private.sh" "${chezmoi_arg_array[@]:1}"
 }
 
 # Enable hidden files in finder, unless they're already enabled.
@@ -187,21 +219,22 @@ fi
 
 # Samba server.
 # TODO: Make this indelibility test actually be useful.
-# queue verify_file_is_indelible "$BREW_ROOT"/etc/smb.conf
+# apply_operation verify_file_is_indelible "$BREW_ROOT"/etc/smb.conf
 
-queue make_windows_file_history
+apply_operation maybe_apply_private_dotfiles
+apply_operation make_windows_file_history
 
 # TODO: This check for whether the GPG key is out of date is far too sensitive
 #       and it frequently triggers when nothing meaningful has changed. This
 #       test should be improved.
-queue test_gpg_key
-# queue test_gpg_secret_key_backups
-queue test_pinentry_symlink
-queue test_acrobat_extension
+apply_operation maybe_test_gpg_key
+# apply_operation test_gpg_secret_key_backups
+apply_operation test_pinentry_symlink
+apply_operation test_acrobat_extension
 # TODO: Hardening these runtimes is currently not a particularly large security improvement.
 #       I need to come up with a bettter solution for this.
-# queue ensure_hardened_runtime "$BREW_ROOT/bin/pinentry-touchid"
-# queue ensure_hardened_runtime "$BREW_ROOT/bin/pinentry-tty"
-# queue ensure_hardened_runtime "$BREW_ROOT/bin/pinentry-mac"
+# apply_operation ensure_hardened_runtime "$BREW_ROOT/bin/pinentry-touchid"
+# apply_operation ensure_hardened_runtime "$BREW_ROOT/bin/pinentry-tty"
+# apply_operation ensure_hardened_runtime "$BREW_ROOT/bin/pinentry-mac"
 
-queue diff_puppet_chezmoi
+apply_operation diff_puppet_chezmoi
