@@ -26,6 +26,7 @@ tput rmam
 trap 'tput smam' 0
 
 declare __lines_printed
+# shellcheck disable=SC2312
 indent_text_inner() {
     local -r IFS=''
     local -r include_final_newline=$1
@@ -34,7 +35,13 @@ indent_text_inner() {
     while read -r line; do
         printf '    %s\n' "${line}"
         (( ++__lines_printed ))
-    done < <("${@:2}")
+    done < <(
+        local exit_status=0
+        "${@:2}" 2>&1 || exit_status="${?}"
+        if [[ ${exit_status} -ne 0 ]]; then
+            printf '[!] Operation failed (exit status %d).\n' "${exit_status}"
+        fi
+    )
     if [[ ${include_final_newline} -eq 1 && ${__lines_printed} -gt 0 ]]; then
         printf '\n'
         (( ++__lines_printed ))
