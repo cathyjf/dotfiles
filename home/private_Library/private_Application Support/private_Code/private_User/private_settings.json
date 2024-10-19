@@ -1,0 +1,18 @@
+{
+    "security.workspace.trust.enabled": false,
+    "security.workspace.trust.emptyWindow": false,
+    "files.associations": {
+        "*.pp": "puppetfile"
+    },
+    "workbench.editor.empty.hint": "hidden",
+    "workbench.colorCustomizations": {
+        "[Default Dark Modern]": {
+            "editor.background" :"#1e1e1e",
+            "statusBarItem.remoteBackground": "#181818"
+        },
+        "[Visual Studio Dark]": {
+            "statusBar.background": "#333333",
+            "statusBarItem.remoteBackground": "#333333"
+        },
+    }
+}
