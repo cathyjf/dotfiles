@@ -60,7 +60,8 @@ echo "Connecting to ${hostname} via sshuttle..."
         printf '[%s] %s\n' "$(/bin/date -Iseconds)" "${line}"
     done < <(
         while true; do
-            ./run -r "${hostname}" "${hostname}:7573" "${option_verbose[@]}" --remote-shell powershell --python py 2>&1 <&-
+            /usr/bin/caffeinate -im ./run -r "${hostname}" "${hostname}:7573" \
+                "${option_verbose[@]}" --remote-shell powershell --python py 2>&1 <&-
             echo 'The sshuttle process ended. Relaunching it soon...'
             sleep 10
         done
