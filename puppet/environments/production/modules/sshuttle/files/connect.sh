@@ -30,11 +30,11 @@ while [[ ${#} -gt 0 ]]; do
 done
 
 pids=()
+username="$(/usr/bin/id -P | /usr/bin/cut -f 1 -d ':')"
 while IFS='' read -r pid; do
     pids+=( "${pid}" );
 done < <(/usr/bin/pgrep -u "${UID}")
 if [[ ${#pids[@]} -gt 0 ]]; then
-    username="$(/usr/bin/id -P | /usr/bin/cut -f 1 -d ':')"
     echo 'Killing existing '"${username}"' procesess: '"${pids[*]}"'.'
     jobs=()
     for pid in "${pids[@]}"; do
@@ -54,14 +54,17 @@ readonly log_filename
 }
 
 echo "Connecting to ${hostname} via sshuttle..."
+sshuttle_run="$(/bin/realpath ./run)"
 (
     set +e
     while IFS='' read -r line; do
         printf '[%s] %s\n' "$(/bin/date -Iseconds)" "${line}"
     done < <(
         while true; do
-            /usr/bin/caffeinate -im ./run -r "${hostname}" "${hostname}:7573" \
-                "${option_verbose[@]}" --remote-shell powershell --python py 2>&1 <&-
+            /usr/bin/caffeinate -im -- \
+                /usr/bin/sudo -n -- /usr/bin/nice -n '-20' -- /usr/bin/sudo -nu "${username}" -- \
+                    "${sshuttle_run}" -r "${hostname}" "${hostname}:7573" \
+                        "${option_verbose[@]}" --remote-shell powershell --python py 2>&1 <&-
             echo 'The sshuttle process ended. Relaunching it soon...'
             sleep 10
         done
