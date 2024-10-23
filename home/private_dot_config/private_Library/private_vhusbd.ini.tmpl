@@ -1,0 +1,26 @@
+{{- /* -*- ini -*- */ -}}
+{{- $machine := eq .chezmoi.hostname `MacBook-Pro` |
+        ternary `macBookPro2018` `macBookAir2020` | index .virtualHereUsb.machines -}}
+
+{{- $device_string := `` -}}
+{{- range .virtualHereUsb.devices -}}
+    {{- $device_string = printf `%s%x/%x,` $device_string .vendor .product -}}
+{{- end -}}
+{{- $device_string = $device_string | substr 0 (len $device_string | add -1 | int) -}}
+
+{{- $nickname_string := .virtualHereUsb.nicknames | join `,` -}}
+
+It={{ $machine.it }}
+EasyFindId={{ $machine.easyFindId }}
+EasyFindPin={{ $machine.easyFindPin }}
+ServerName={{ $machine.serverName }}
+License={{ $machine.license }}
+UseAVAHI=0
+MinimizeOnStart=1
+NetworkInterface=localhost
+PingInterval=4
+PingTimeout=25
+ReverseClients=cathy-alienware
+ReverseClientsRetryPeriod=3
+AllowedDevices={{ $device_string }}
+DeviceNicknames={{ $nickname_string }}
