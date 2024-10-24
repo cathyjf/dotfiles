@@ -63,12 +63,14 @@ class sshuttle {
     file {
         default:
             * => $default_file_params;
-        [$home, "${home}/.ssh", "${home}/sshuttle", "${home}/logs"]:
+        [$home, "${home}/.config", "${home}/.ssh", "${home}/sshuttle", "${home}/logs"]:
             ensure  => directory;
         ["${home}/logs/cathy-alienware.log", "${home}/logs/cathy-alienware.log.bak"]: ;
         "${home}/sshuttle.tar.bz2":
             source         => 'puppet:///modules/sshuttle/sshuttle-2f3171670c6188eb842912bf0ab7f93dc0da179b.tar.bz2',
             checksum_value => '85810f8caace52d4a00dd0ad77a4b5cd74ad0a32a7e36fa3d6eb87bd858f9c49';
+        "${home}/.config/sshuttle.conf":
+            source => 'puppet:///modules/sshuttle/sshuttle.conf';
         "${home}/.ssh/config":
             source => 'puppet:///modules/sshuttle/ssh/config';
         "${home}/connect.sh":
@@ -94,12 +96,17 @@ class sshuttle {
         umask       => $default_umask
     }
 
-    # These two variables are referenced in the `sshuttle/sudoers.erb` template.
+    # These three variables are referenced in the `sshuttle/sudoers.erb` template.
     $sudoers_username = sanitized_username($username)
     $sudoers_prefix_sshuttle = @("EOT")
         ${sudoers_username} ALL = (root) NOPASSWD: /usr/bin/env PYTHONPATH=/private/var/sshuttle/sshuttle \
             /Applications/Xcode.app/Contents/Developer/usr/bin/python3 \
             /private/var/sshuttle/sshuttle/sshuttle/__main__.py
+        |-EOT
+    $sudoers_prefix_nice = @("EOT")
+        ${sudoers_username} ALL = (root) NOPASSWD: /usr/bin/nice -n -20 -- \
+            /usr/bin/sudo -nu ${sudoers_username} -- /private/var/sshuttle/sshuttle/run \
+            @/private/var/sshuttle/.config/sshuttle.conf
         |-EOT
     file { '/etc/sudoers.d/sshuttle-service':
         ensure       => file,
@@ -112,7 +119,7 @@ class sshuttle {
     # This may allow `puppet apply` to create a diff without root access.
     cathyjf::file_readable_by_user {
         [
-            '/etc/sudoers.d/sshuttle-service',
+            '/etc/sudoers.d/sshuttle-service', "${home}/.config/sshuttle.conf",
             "${home}/sshuttle.tar.bz2", "${home}/connect.sh", "${home}/.ssh/config",
             "${home}/logs/cathy-alienware.log", "${home}/logs/cathy-alienware.log.bak",
             # Note: Only the encrypted SSH keys appear in this list, not the unencrypted ones.

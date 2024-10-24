@@ -53,8 +53,9 @@ readonly log_filename
     /usr/bin/truncate -s 0 "${log_filename}"
 }
 
-echo "Connecting to ${hostname} via sshuttle..."
 sshuttle_run="$(/bin/realpath ./run)"
+sshuttle_conf="$(/bin/realpath ../.config/sshuttle.conf)"
+echo "Launching sshuttle with config (${sshuttle_conf})..."
 (
     set +e
     while IFS='' read -r line; do
@@ -63,8 +64,7 @@ sshuttle_run="$(/bin/realpath ./run)"
         while true; do
             /usr/bin/caffeinate -im -- \
                 /usr/bin/sudo -n -- /usr/bin/nice -n '-20' -- /usr/bin/sudo -nu "${username}" -- \
-                    "${sshuttle_run}" -r "${hostname}" "${hostname}:7573" \
-                        "${option_verbose[@]}" --remote-shell powershell --python py 2>&1 <&-
+                    "${sshuttle_run}" @"${sshuttle_conf}" "${option_verbose[@]}" 2>&1 <&-
             echo 'The sshuttle process ended. Relaunching it soon...'
             sleep 10
         done

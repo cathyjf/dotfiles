@@ -2,8 +2,9 @@
 <%= @sudoers_prefix_sshuttle %> -v --method auto --firewall
 <%= @sudoers_prefix_sshuttle %> -v -v --method auto --firewall
 
-<%= @sudoers_username %> ALL = (root) NOPASSWD: /usr/bin/nice \
-    ^-n -20 -- /usr/bin/sudo -nu <%= @sudoers_username %> -- /private/var/sshuttle/sshuttle/run .*$
+<%= @sudoers_prefix_nice %>
+<%= @sudoers_prefix_nice %> -v
+<%= @sudoers_prefix_nice %> -v -v
 
 User_Alias CATHY_UID = #<%= @facts['cathy_uid'] %>
 CATHY_UID ALL = (<%= @sudoers_username %>) CWD=~<%= @sudoers_username %> NOPASSWD: /var/sshuttle/connect.sh \
