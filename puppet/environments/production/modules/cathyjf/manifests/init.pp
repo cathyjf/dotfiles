@@ -107,10 +107,27 @@ class cathyjf::macos_nvram {
 class cathyjf {
     $validate_plist = '/usr/bin/plutil %'
     $validate_sudoers = '/usr/sbin/visudo -c -q -f %'
+    $default_file_params = {
+        ensure => file,
+        owner  => 'root',
+        group  => 'wheel',
+        links  => follow,
+        mode   => 'ugo=r'
+    }
+    file {
+        default:
+            * => $default_file_params;
+        '/etc/puppetlabs/facter':
+            ensure => directory,
+            mode   => 'ugo=rx';
+    }
     Hash({
         '/etc/hosts' => {},
         '/etc/pam.d/sudo_local' => {},
         '/etc/ppp/ip-up' => { mode => 'u=rx,go=r' },
+        '/etc/puppetlabs/facter/facter.conf' => {
+            source => 'puppet:///modules/cathyjf/facter.conf'
+        },
         '/etc/ssh/ssh_config.d/100-cathy-alienware.conf' => {
             source => 'puppet:///modules/cathyjf/ssh_config.d/100-cathy-alienware.conf'
         },
@@ -136,12 +153,8 @@ class cathyjf {
     }).each |$filename, $overrides| {
         file {
             default:
-                ensure => file,
-                owner  => 'root',
-                group  => 'wheel',
-                links  => follow,
-                mode   => 'ugo=r',
-                source => "${facts['chezmoi_target']}/.config${filename}";
+                source => "${facts['chezmoi_target']}/.config${filename}",
+                *      => $default_file_params;
             $filename:
                 *      => $overrides;
         }
