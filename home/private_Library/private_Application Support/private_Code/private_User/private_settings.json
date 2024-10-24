@@ -7,10 +7,11 @@
     "workbench.editor.empty.hint": "hidden",
     "workbench.colorCustomizations": {
         "[Default Dark Modern]": {
-            "editor.background" :"#1e1e1e",
+            "editor.background" :"#202125",
             "statusBarItem.remoteBackground": "#181818"
         },
         "[Visual Studio Dark]": {
+            "editor.background": "#202125",
             "statusBar.background": "#333333",
             "statusBarItem.remoteBackground": "#333333"
         },
