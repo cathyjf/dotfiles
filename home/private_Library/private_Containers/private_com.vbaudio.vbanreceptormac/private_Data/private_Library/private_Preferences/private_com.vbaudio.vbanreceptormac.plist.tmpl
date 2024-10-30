@@ -1,0 +1,55 @@
+{{- /* -*- xml -*- */ -}}
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>APPDATA_VBAN_RECEPTOR_buffersize</key>
+	<string>
+		{{- .vbaudio.vbanreceptor.bufferSize -}}
+	</string>
+
+	<key>VBAN_RECEPTOR_DefaultNetworkQuality</key>
+	<integer>
+		{{- .vbaudio.vbanreceptor.networkQuality -}}
+	</integer>
+
+	<key>VBAN_RECEPTOR_DefaultOutputDeviceName</key>
+	<string>
+		{{- .vbaudio.vbanreceptor.defaultOutputDevice.name -}}
+	</string>
+
+	<key>VBAN_RECEPTOR_DefaultOutputDeviceUID</key>
+	<string>
+		{{- .vbaudio.vbanreceptor.defaultOutputDevice.uid -}}
+	</string>
+
+	<key>VBAN_RECEPTOR_DefaultPort</key>
+	<string>
+		{{- .vbaudio.vbanreceptor.port -}}
+	</string>
+
+	<key>VBAN_RECEPTOR_StreamSelected</key>
+	<string>{
+  "streamIp" : "{{ .vbaudio.vbanreceptor.stream.host }}",
+  "streamFormatBit" : {{ .vbaudio.vbanreceptor.stream.bitrate }},
+  "streamNbChannel" : {{ .vbaudio.vbanreceptor.stream.channels }},
+  "streamName" : "{{ .vbaudio.vbanreceptor.stream.name }}",
+  "samplingRate" : {{ .vbaudio.vbanreceptor.stream.frequency }},
+  "index" : {{ .vbaudio.vbanreceptor.stream.index }}
+}</string>
+
+	<key>VBAN_RECEPTOR_Username</key>
+	<string>Cathy</string>
+
+	<!-- Bass adjustment -->
+	<key>VBAN_RECEPTOR_levelEQ1</key>
+	<real>-12</real>
+
+	<!-- Volume adjustment -->
+	<key>VBAN_RECEPTOR_levelGain</key>
+	<real>-8</real>
+
+	<key>VBAN_RECEPTOR_mode</key>
+	<integer>0</integer>
+</dict>
+</plist>
