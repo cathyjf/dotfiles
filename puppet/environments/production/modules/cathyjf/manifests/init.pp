@@ -119,20 +119,18 @@ class cathyjf::macos_nvram {
 # Class used for deploying root config files to machines managed by Cathy.
 class cathyjf {
     $validate_plist = '/usr/bin/plutil %'
+    $validate_sshd = '/usr/sbin/sshd -f % -t'
     $validate_sudoers = '/usr/sbin/visudo -c -q -f %'
-    $default_file_params = {
+    File {
         ensure => file,
         owner  => 'root',
         group  => 'wheel',
         links  => follow,
         mode   => 'ugo=r'
     }
-    file {
-        default:
-            * => $default_file_params;
-        '/etc/puppetlabs/facter':
-            ensure => directory,
-            mode   => 'ugo=rx';
+    file { '/etc/puppetlabs/facter':
+        ensure => directory,
+        mode   => 'ugo=rx';
     }
     Hash({
         '/etc/hosts' => {},
@@ -144,7 +142,9 @@ class cathyjf {
         '/etc/ssh/ssh_config.d/100-cathy-alienware.conf' => {
             source => 'puppet:///modules/cathyjf/ssh_config.d/100-cathy-alienware.conf'
         },
-        '/etc/ssh/sshd_config.d/200-cathyjf.conf' => {},
+        '/etc/ssh/sshd_config.d/200-cathyjf.conf' => {
+            validate_cmd => $validate_sshd
+        },
         '/Library/vhusbd.ini' => { mode => 'u=rw,go=r' },
         '/Library/LaunchDaemons/com.virtualhere.vhusbd.plist' => {
             validate_cmd => $validate_plist
@@ -156,7 +156,7 @@ class cathyjf {
         },
         '/var/root/run-startup-commands' => { mode => 'u=rwx,go=' },
         '/etc/sudoers.d/run-startup-commands' => {
-            mode         => 'u=r,g=r,o=',
+            mode         => 'ug=r,o=',
             validate_cmd => $validate_sudoers
         },
         "${facts['brew_root']}/etc/smb.conf" => { mode => 'u=r,go=' },
@@ -166,8 +166,7 @@ class cathyjf {
     }).each |$filename, $overrides| {
         file {
             default:
-                source => "${facts['chezmoi_target']}/.config${filename}",
-                *      => $default_file_params;
+                source => "${facts['chezmoi_target']}/.config${filename}";
             $filename:
                 *      => $overrides;
         }
