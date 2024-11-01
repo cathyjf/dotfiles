@@ -10,7 +10,7 @@ define sshuttle::encrypted_ssh_key {
             source => "puppet:///modules/sshuttle/ssh/keys/${title}.asc";
         $file_title:
     }
-    exec { "decrypt ${file_title}.asc" :
+    exec { "decrypt ${file_title}.asc":
         require => File[$file_directory, "${file_title}.asc", $file_title],
         # This condition can be run as Cathy without root access because checking the size of
         # the file apparently only requires read access to the enclosing directory, not read
@@ -23,19 +23,14 @@ define sshuttle::encrypted_ssh_key {
             '/bin/bash', '-c', (
                 # The point of this formulation is to avoid running the untrusted `gpg` binary
                 # as root, while still writing to a location to which only the `_sshuttle`
-                # user can write. The curly braces are used to make the logic clearer.
+                # user can write.
                 @(EOT)
-                {
-                    /usr/bin/sudo -u "$1" /bin/launchctl asuser "$2" \
-                        /usr/bin/env -i GNUPGHOME="$3" "$4" --decrypt "$5"
-                } | {
-                    /usr/bin/sudo -u "$6" /bin/cat > "$7"
-                }
+                /usr/bin/sudo -u "$1" /bin/launchctl asuser "$2" \
+                    /usr/bin/env -i GNUPGHOME="$3" "$4" --decrypt < "$5" > "$6"
                 |-EOT
             ), 'argv0',
             $facts['cathy_username'], String($facts['cathy_uid']),
-            $facts['gnupghome'], $facts['gpg_bin'], "${file_title}.asc",
-            $sshuttle::default_file_params['owner'], $file_title
+            $facts['gnupghome'], $facts['gpg_bin'], "${file_title}.asc", $file_title
         ]
     }
 }
