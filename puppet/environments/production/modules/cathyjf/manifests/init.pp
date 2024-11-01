@@ -89,6 +89,19 @@ class cathyjf::fish_shell {
     }
 }
 
+# Configure certain services.
+class cathyjf::manage_services {
+    # We don't need these puppet services.
+    # Unfortunately, the `service` resource type currently doesn't work at all
+    # unless we're running as root, so we need to check for that.
+    if $facts['identity']['uid'] == 0 {
+        service { ['puppet', 'pxp-agent']:
+            ensure => stopped,
+            enable => false
+        }
+    }
+}
+
 # Configure certain macOS nvram variables.
 class cathyjf::macos_nvram {
     # If macOS is configured to use external bluetooth adapters when they are plugged in
@@ -162,5 +175,6 @@ class cathyjf {
     }
     include cathyjf::fish_shell
     include cathyjf::macos_nvram
+    include cathyjf::manage_services
     include sshuttle
 }

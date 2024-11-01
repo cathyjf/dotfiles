@@ -47,7 +47,7 @@ while [[ ${#} -gt 0 ]]; do
             puppet_extra_args+=( '--color=false' ) ;;
         --ensure-stdlib)
             ensure_stdlib=1 ;;
-        --debug | --detailed-exitcodes | --noop | --show_diff | --verbose)
+        --debug | --detailed-exitcodes | --noop | --profile | --show_diff | --summarize | --verbose)
             puppet_extra_args+=( "${1}" ) ;;
         *)
             printf 'Unrecognized argument: %s\n' "${1}" >&2
