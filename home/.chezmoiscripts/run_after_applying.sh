@@ -13,12 +13,11 @@ source "${chezmoi_misc_path}/tools/set-common-variables.sh"
 BREW_ROOT=$(chezmoi execute-template '{{ template "brew-root" . }}') || exit 1
 readonly BREW_ROOT
 
-tput() {
-    # Invoke `tput` if and only if stdout is a terminal.
-    if [[ -t 1 ]]; then
-        command tput "${@}"
-    fi
-}
+# We will invoke `tput` if and only if stdout is a terminal.
+# Otherwise, replace `tput` with a no-op.
+if [[ ! -t 1 ]]; then
+    tput() { :; }
+fi
 
 # Disable automatic line wrap until this script exits. This is required for the
 # fancy cursor manipulation in `apply_operation` to work correctly.
@@ -26,15 +25,37 @@ tput rmam
 trap 'tput smam' 0
 
 declare __lines_printed
+__echo_increment() {
+    : $(( ++__lines_printed ))
+    echo -E "${@:-}"
+}
+
+__printfln_wrap() {
+    local text width lines=1
+    # shellcheck disable=SC2059
+    printf -v text "${@}"
+    if [[ -t 1 ]]; then
+        width=$(tput cols)
+        lines=$(( ${#text} / width + ((${#text} % width) ? 1 : 0) ))
+    fi
+    if [[ ${lines} -eq 1 ]]; then
+        __echo_increment "${text}"
+    else
+        local i
+        for ((i = 0; i < lines; ++i)) do
+            __echo_increment "${text:$(( i * width )):${width}}"
+        done
+    fi
+}
+
 # shellcheck disable=SC2312
-indent_text_inner() {
+__indent_text_inner() {
     local -r IFS=''
     local -r include_final_newline=$1
     local line
     __lines_printed=0
     while read -r line; do
-        printf '    %s\n' "${line}"
-        (( ++__lines_printed ))
+        __printfln_wrap '    %s' "${line}"
     done < <(
         local exit_status=0
         "${@:2}" 2>&1 || exit_status="${?}"
@@ -43,17 +64,16 @@ indent_text_inner() {
         fi
     )
     if [[ ${include_final_newline} -eq 1 && ${__lines_printed} -gt 0 ]]; then
-        printf '\n'
-        (( ++__lines_printed ))
+        __echo_increment
     fi
 }
 
 indent_text_with_final_newline() {
-    indent_text_inner 1 "${@}"
+    __indent_text_inner 1 "${@}"
 }
 
 indent_text() {
-    indent_text_inner 0 "${@}"
+    __indent_text_inner 0 "${@}"
 }
 
 unix_epoch() {
