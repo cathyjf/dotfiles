@@ -15,5 +15,13 @@
             "statusBar.background": "#333333",
             "statusBarItem.remoteBackground": "#333333"
         },
-    }
+    },
+    "cmake.pinnedCommands": [
+        "cmake.configure",
+        "cmake.clean",
+        "cmake.build",
+    ],
+    "cmake.preferredGenerators": [
+        "Ninja"
+    ]
 }
