@@ -1,9 +1,13 @@
 {
-    "security.workspace.trust.enabled": false,
+    "security.workspace.trust.enabled": true,
     "security.workspace.trust.emptyWindow": false,
+    "security.workspace.trust.startupPrompt": "never",
+    "security.workspace.trust.banner": "never",
+    "security.workspace.trust.untrustedFiles": "newWindow",
     "files.associations": {
         "*.pp": "puppetfile"
     },
+    "window.newWindowDimensions": "maximized",
     "workbench.editor.empty.hint": "hidden",
     "workbench.colorCustomizations": {
         "[Default Dark Modern]": {
@@ -16,6 +20,7 @@
             "statusBarItem.remoteBackground": "#333333"
         },
     },
+    "cmake.showOptionsMovedNotification": false,
     "cmake.pinnedCommands": [
         "cmake.configure",
         "cmake.clean",
@@ -23,5 +28,5 @@
     ],
     "cmake.preferredGenerators": [
         "Ninja"
-    ]
+    ],
 }
