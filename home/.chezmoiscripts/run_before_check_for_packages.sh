@@ -1,4 +1,5 @@
 #!/bin/bash
+set -efuC -o pipefail
 
 chezmoi_source_path="${CHEZMOI_SOURCE_DIR:?}"
 chezmoi_misc_path="$(chezmoi execute-template '{{ .chezmoi.miscDir }}')" || exit 1
@@ -16,22 +17,22 @@ fi
 brew_bundle_args=( --no-upgrade --quiet --file "${chezmoi_misc_path}/Brewfile" )
 if ! HOMEBREW_NO_AUTO_UPDATE=1 "${BREW_BIN}" bundle check "${brew_bundle_args[@]}"; then
     echo 'Executing `brew bundle install --no-upgrade`...'
-    "${BREW_BIN}" bundle install "${brew_bundle_args[@]}"
-    brew_install_status=${?}
+    __status=0
+    "${BREW_BIN}" bundle install "${brew_bundle_args[@]}" || __status="${?}"
     echo "Finished \`brew bundle install\`."
-    if [[ ${brew_install_status} -ne 0 ]]; then
-        echo "    Status code: ${brew_install_status}."
+    if [[ ${__status} -ne 0 ]]; then
+        echo "    Status code: ${__status}."
     fi
 fi
 
 export PERL_MM_OPT="INSTALL_BASE=${HOME}/perl5"
 if ! perldoc -l local::lib 1>/dev/null 2>&1; then
     echo 'Installing local:lib for perl...'
-    cpan local::lib
-    cpan_status=${?}
+    __status=0
+    cpan local::lib || __status="${?}"
     echo 'Finished installing local::lib.'
-    if [[ ${cpan_status} -ne 0 ]]; then
-        echo "    Status code: ${cpan_status}."
+    if [[ ${__status} -ne 0 ]]; then
+        echo "    Status code: ${__status}."
     fi
 fi
 

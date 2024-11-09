@@ -4,10 +4,11 @@
     "security.workspace.trust.startupPrompt": "never",
     "security.workspace.trust.banner": "never",
     "security.workspace.trust.untrustedFiles": "newWindow",
+    "window.newWindowProfile": "Default",
+    "window.newWindowDimensions": "maximized",
     "files.associations": {
         "*.pp": "puppetfile"
     },
-    "window.newWindowDimensions": "maximized",
     "workbench.editor.empty.hint": "hidden",
     "workbench.colorCustomizations": {
         "[Default Dark Modern]": {
@@ -20,6 +21,7 @@
             "statusBarItem.remoteBackground": "#333333"
         },
     },
+    "cmake.showConfigureWithDebuggerNotification": false,
     "cmake.showOptionsMovedNotification": false,
     "cmake.pinnedCommands": [
         "cmake.configure",
