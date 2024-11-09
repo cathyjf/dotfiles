@@ -34,7 +34,6 @@ fish_add_path --path --append --move /usr/local/bin
 set -gx EDITOR (path resolve (status dirname)'/run_code_editor_and_wait.fish')
 set -gx VISUAL $EDITOR
 set -gx MANPAGER (path resolve (status dirname)'/man_pager.fish')
-set -gx HOMEBREW_NO_ANALYTICS 1
 set -gx GNUTLS_SYSTEM_PRIORITY_FILE "$HOME/.config/gnutls.conf"
 set -gx VCPKG_ROOT "$HOME/git/vcpkg"
 set -gx PERL_LWP_SSL_CA_FILE '{{ template `brew-root` . }}'/opt/ca-certificates/share/ca-certificates/cacert.pem
@@ -66,18 +65,12 @@ add_manpath /opt/puppetlabs/puppet/share/man
 
 set -gx DEVKITPRO /opt/devkitpro
 set -gx DEVKITPPC /opt/devkitpro/devkitppc
-set -gx HOMEBREW_NO_ENV_HINTS 1
-set -gx HOMEBREW_NO_INSECURE_REDIRECT 1
-set -gx HOMEBREW_LIVECHECK_WATCHLIST $HOME/.brew_livecheck_watchlist
+
+# Settings for brew(1).
+{{ template `brew-env` . }}
 
 # See https://learn.microsoft.com/en-us/dotnet/core/tools/telemetry.
 set -gx DOTNET_CLI_TELEMETRY_OPTOUT 1
-
-{{ if ne .chezmoi.arch `arm64` -}}
-# Number of threads to use when invoking make(1).
-# I don't want the system to lock up just because brew is compiling code.
-set -gx HOMEBREW_MAKE_JOBS 2
-{{- end }}
 
 # Set up gpg-agent and ssh-agent.
 set -l parent_command (which (ps -o comm= -p (ps -o ppid= -p $fish_pid)) 2> /dev/null)

@@ -1,0 +1,15 @@
+{{- /*
+##
+# The output of this template must be valid syntax in both bash *and* fish.
+##
+*/ -}}
+export HOMEBREW_NO_ANALYTICS=1
+export HOMEBREW_NO_ENV_HINTS=1
+export HOMEBREW_NO_INSECURE_REDIRECT=1
+export HOMEBREW_LIVECHECK_WATCHLIST="{{ .chezmoi.homeDir }}/.brew_livecheck_watchlist"
+
+{{- if ne .chezmoi.arch `arm64` }}
+# Number of threads to use when invoking make(1).
+# I don't want the system to lock up just because brew is compiling code.
+export HOMEBREW_MAKE_JOBS=2
+{{- end -}}

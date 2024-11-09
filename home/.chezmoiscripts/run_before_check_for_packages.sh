@@ -1,10 +1,15 @@
 #!/bin/bash
 set -efuC -o pipefail
 
-chezmoi_source_path="${CHEZMOI_SOURCE_DIR:?}"
-chezmoi_misc_path="$(chezmoi execute-template '{{ .chezmoi.miscDir }}')" || exit 1
+__chezmoi_temp=$(mktemp)
+trap 'rm -f -- "${__chezmoi_temp}"' 0
+chezmoi execute-template -o "${__chezmoi_temp}" <<'HEREDOC_END'
+    chezmoi_misc_path={{ .chezmoi.miscDir | quote }}
+    BREW_ROOT="{{ template `brew-root` . }}"
+    {{ template `brew-env` . }}
+HEREDOC_END
+source "${__chezmoi_temp}"
 
-BREW_ROOT="$(chezmoi execute-template '{{ template "brew-root" . }}')"
 BREW_BIN="${BREW_ROOT}"/bin/brew
 
 if [[ ! -x ${BREW_BIN} ]]; then
