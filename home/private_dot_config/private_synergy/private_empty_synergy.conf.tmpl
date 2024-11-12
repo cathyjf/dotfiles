@@ -1,5 +1,5 @@
 section: screens
-	cathy-macbookair:
+	{{ .synergy.screenName }}:
 		halfDuplexCapsLock = false
 		halfDuplexNumLock = false
 		halfDuplexScrollLock = false
@@ -7,13 +7,6 @@ section: screens
 		switchCorners = none 
 		switchCornerSize = 0
 	cathy-alienware:
-		halfDuplexCapsLock = false
-		halfDuplexNumLock = false
-		halfDuplexScrollLock = false
-		xtestIsXineramaUnaware = false
-		switchCorners = none 
-		switchCornerSize = 0
-	cathy-macbookpro:
 		halfDuplexCapsLock = false
 		halfDuplexNumLock = false
 		halfDuplexScrollLock = false
@@ -35,25 +28,9 @@ section: options
 	switchCornerSize = 0
 end
 
-{{ if eq .chezmoi.hostname "MacBook-Pro" -}}
-
 section: links
-	cathy-macbookair:
-		right = cathy-alienware
-	cathy-alienware:
-		right = cathy-macbookpro
-		left = cathy-macbookair
-	cathy-macbookpro:
-		left = cathy-alienware
-end
-
-{{- else -}}
-
-section: links
-	cathy-macbookair:
+	{{ .synergy.screenName }}:
 		left = cathy-alienware
 	cathy-alienware:
-		right = cathy-macbookair
+		right = {{ .synergy.screenName }}
 end
-
-{{- end -}}

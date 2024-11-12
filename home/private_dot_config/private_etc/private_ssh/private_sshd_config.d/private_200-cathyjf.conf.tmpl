@@ -4,11 +4,7 @@ KbdInteractiveAuthentication no
 AuthenticationMethods publickey
 PermitRootLogin no
 
-{{- if eq .chezmoi.hostname "MacBook-Pro" }}
-DenyUsers *
-{{- else }}
-AllowUsers cathy@{{ template "cathy-mac-ip" }}
+AllowUsers cathy@192.168.1.*
 
 # See https://wiki.gnupg.org/AgentForwarding
 StreamLocalBindUnlink yes
-{{- end }}

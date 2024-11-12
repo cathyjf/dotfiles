@@ -20,5 +20,11 @@ encryption = "gpg"
     privateDir = "{{ trim (output "/bin/realpath" (print .chezmoi.sourceDir "/../private")) }}"
     puppetDir = "{{ trim (output "/bin/realpath" (print .chezmoi.sourceDir "/../puppet")) }}"
 [data.synergy]
-    screenName = "{{- eq .chezmoi.hostname `MacBook-Pro` | ternary `cathy-macbookpro` `cathy-macbookair` -}}"
+    screenName = "{{
+        eq .chezmoi.hostname `MacBook-Pro` |
+            ternary `cathy-macbookpro"` (
+                eq .chezmoi.hostname `Mac-mini` |
+                    ternary `cathy-macmini` `cathy-macbookair`
+            )
+    }}"
     serverPort = 24800

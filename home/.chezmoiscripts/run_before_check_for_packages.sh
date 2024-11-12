@@ -23,7 +23,7 @@ brew_bundle_args=( --no-upgrade --quiet --file "${chezmoi_misc_path}/Brewfile" )
 if ! HOMEBREW_NO_AUTO_UPDATE=1 "${BREW_BIN}" bundle check "${brew_bundle_args[@]}"; then
     echo 'Executing `brew bundle install --no-upgrade`...'
     __status=0
-    "${BREW_BIN}" bundle install "${brew_bundle_args[@]}" || __status="${?}"
+    "${BREW_BIN}" bundle install --force "${brew_bundle_args[@]}" || __status="${?}"
     echo "Finished \`brew bundle install\`."
     if [[ ${__status} -ne 0 ]]; then
         echo "    Status code: ${__status}."
