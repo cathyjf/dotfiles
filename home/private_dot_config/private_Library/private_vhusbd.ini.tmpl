@@ -1,6 +1,13 @@
 {{- /* -*- ini -*- */ -}}
-{{- $machine := eq .chezmoi.hostname `MacBook-Pro` |
-        ternary `macBookPro2018` `macBookAir2020` | index .virtualHereUsb.machines -}}
+{{- $index := `` -}}
+{{- if eq .chezmoi.hostname `Mac-mini` -}}
+    {{- $index = `macMini2024` -}}
+{{- else if eq .chezmoi.hostname `MacBook-Pro` -}}
+    {{- $index = `macBookPro2018` -}}
+{{- else -}}
+    {{- $index = `macBookAir2020` -}}
+{{- end -}}
+{{- $machine := $index | index .virtualHereUsb.machines -}}
 
 {{- $device_string := `` -}}
 {{- range .virtualHereUsb.devices -}}
