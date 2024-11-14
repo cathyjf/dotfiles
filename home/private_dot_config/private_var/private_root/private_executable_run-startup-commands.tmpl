@@ -28,8 +28,7 @@ start_pf() {
         --add "${smbd_path}" --unblockapp "${smbd_path}" \
         --add "${vhserver}" --blockapp "${vhserver}"
 
-    local pf_conf=/var/root/pf.conf
-    /bin/cat /etc/pf.conf - > "${pf_conf}" << 'APPEND_RULES'
+    /sbin/pfctl -a com.cathyjf -f - << 'CATHYJF_RULES'
 # VirtualHere USB Server
 # All connections should go over ssh, so block all direct network connectivity.
 block return in proto tcp from any to any port 7575 # normal TCP connection
@@ -46,8 +45,10 @@ pass in inet proto tcp from 127.0.0.1 to 127.0.0.1 port 445
 pass in inet proto tcp from { \
     cathy-alienware, cathy-mac, cathy-macbookair, cathy-macbookair-wifi \
 } to cathy-mac port 445
-APPEND_RULES
+CATHYJF_RULES
 
+    local pf_conf=/var/root/pf.conf
+    /bin/cat /etc/pf.conf - > "${pf_conf}" <<< 'anchor "com.cathyjf"'
     echo "Starting (or restarting) pf..."
     /sbin/pfctl -E -f "${pf_conf}"
 }
