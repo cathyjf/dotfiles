@@ -139,8 +139,12 @@ class cathyjf {
         '/etc/puppetlabs/facter/facter.conf' => {
             source => 'puppet:///modules/cathyjf/facter.conf'
         },
-        '/etc/ssh/ssh_config.d/100-cathy-alienware.conf' => {
-            source => 'puppet:///modules/cathyjf/ssh_config.d/100-cathy-alienware.conf'
+        '/etc/ssh/ssh_config.d' => {
+            ensure  => directory,
+            recurse => true,
+            purge   => true,
+            mode    => 'ugo=r,ugo+X',
+            source  => 'puppet:///modules/cathyjf/ssh_config.d'
         },
         '/etc/ssh/sshd_config.d/200-cathyjf.conf' => {
             validate_cmd => $validate_sshd

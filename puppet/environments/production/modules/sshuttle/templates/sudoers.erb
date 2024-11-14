@@ -1,10 +1,10 @@
-<%= @sudoers_prefix_sshuttle %> --method auto --firewall
-<%= @sudoers_prefix_sshuttle %> -v --method auto --firewall
-<%= @sudoers_prefix_sshuttle %> -v -v --method auto --firewall
+<%= @sudoers_username %> ALL = (root) NOPASSWD: /usr/bin/env ^PYTHONPATH=/private/var/sshuttle/sshuttle \
+    /Applications/Xcode\.app/Contents/Developer/usr/bin/python3 \
+    /private/var/sshuttle/sshuttle/sshuttle/__main__\.py (-v ?){0,2} --method auto --firewall$
 
-<%= @sudoers_prefix_nice %>
-<%= @sudoers_prefix_nice %> -v
-<%= @sudoers_prefix_nice %> -v -v
+<%= @sudoers_username %> ALL = (root) NOPASSWD: /usr/bin/nice ^-n -20 -- \
+    /usr/bin/sudo -nu <%= @sudoers_username %> -- /private/var/sshuttle/sshuttle/run \
+    @/private/var/sshuttle/\.config/sshuttle\.conf (-v ?){0,2}$
 
 User_Alias CATHY_UID = #<%= @facts['cathy_uid'] %>
 CATHY_UID ALL = (<%= @sudoers_username %>) CWD=~<%= @sudoers_username %> NOPASSWD: /var/sshuttle/connect.sh \

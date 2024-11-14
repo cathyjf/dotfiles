@@ -91,18 +91,8 @@ class sshuttle {
         umask       => $default_umask
     }
 
-    # These three variables are referenced in the `sshuttle/sudoers.erb` template.
+    # This variables is referenced in the `sshuttle/sudoers.erb` template.
     $sudoers_username = sanitized_username($username)
-    $sudoers_prefix_sshuttle = @("EOT")
-        ${sudoers_username} ALL = (root) NOPASSWD: /usr/bin/env PYTHONPATH=/private/var/sshuttle/sshuttle \
-            /Applications/Xcode.app/Contents/Developer/usr/bin/python3 \
-            /private/var/sshuttle/sshuttle/sshuttle/__main__.py
-        |-EOT
-    $sudoers_prefix_nice = @("EOT")
-        ${sudoers_username} ALL = (root) NOPASSWD: /usr/bin/nice -n -20 -- \
-            /usr/bin/sudo -nu ${sudoers_username} -- /private/var/sshuttle/sshuttle/run \
-            @/private/var/sshuttle/.config/sshuttle.conf
-        |-EOT
     file { '/etc/sudoers.d/sshuttle-service':
         ensure       => file,
         content      => template('sshuttle/sudoers.erb'),

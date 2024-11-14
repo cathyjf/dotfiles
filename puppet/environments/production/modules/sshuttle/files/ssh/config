@@ -3,6 +3,8 @@ Include /etc/ssh/ssh_config.d/*.conf
 
 Host cathy-alienware
     User Cathy
+    IdentityFile ~/.ssh/id_ed25519
+    UserKnownHostsFile ~/.ssh/known_hosts
     # These packets will primarily be used to forward gamepad input, which we
     # want to be as low-latency as possible.
     IPQoS ef

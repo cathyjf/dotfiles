@@ -1,9 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 export PATH=
 script="$(/usr/bin/basename "$0")"
-if [ "$script" = "restart-ssh-macbookair.sh" ]; then
+if [[ $script == "restart-ssh-macbookair.sh" ]]; then
     hostname="cathy-macbookair"
-elif [ "$script" = "restart-ssh-alienware.sh" ]; then
+elif [[ $script == "restart-ssh-alienware.sh" ]]; then
     hostname="cathy-alienware"
 else
     echo Unrecognized invocation.
@@ -12,21 +12,24 @@ fi
 for autossh_pid in $(/usr/bin/pgrep -x autossh); do
     for pid in $(/usr/bin/pgrep -P "$autossh_pid" -f "$hostname"); do
         echo "Found existing autossh connection to $hostname with pid $autossh_pid."
-        if [ "$1" = "-x" ]; then
+        if [[ $1 = "-x" ]]; then
             exit 0
         fi
         kill -s TERM "$pid" "$autossh_pid"
         echo "Killed process $autossh_pid and child $pid."
     done
 done
+if [[ ($1 != "-x") && ($hostname == "cathy-alienware") ]]; then
+    # For unknown reasons, sshuttle sometimes fails to start if there is an existing
+    # autossh connection to the same host. To avoid this issue, we'll make sure to
+    # start sshuttle before autossh.
+    /usr/bin/sudo -n -u _sshuttle /var/sshuttle/connect.sh -s 1.1 -v
+fi
 if AUTOSSH_LOGFILE="$(/bin/realpath "$(/usr/bin/dirname "$0")")/autossh.${hostname}.log"; then
     export AUTOSSH_LOGFILE
 fi
-echo "Connecting to $hostname..."
+echo "Connecting to $hostname via autossh (for Deskflow)..."
 AUTOSSH_BIN={{ template "brew-root" . }}/bin/autossh
 if "$AUTOSSH_BIN" -M 0 -f -T -N -i ~/.ssh/Cathy/Cathy-onboot/id_rsa "$hostname"; then
     echo "Connected to $hostname."
-fi
-if [ "$1" != "-x" ] && [ "$hostname" = "cathy-alienware" ]; then
-    /usr/bin/sudo -n -u _sshuttle /var/sshuttle/connect.sh -s 2 -v
 fi

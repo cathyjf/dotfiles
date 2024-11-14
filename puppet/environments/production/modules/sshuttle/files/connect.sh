@@ -35,10 +35,18 @@ while IFS='' read -r pid; do
     pids+=( "${pid}" );
 done < <(/usr/bin/pgrep -u "${UID}")
 if [[ ${#pids[@]} -gt 0 ]]; then
-    echo 'Killing existing '"${username}"' procesess: '"${pids[*]}"'.'
-    jobs=()
+    pgids=()
     for pid in "${pids[@]}"; do
-        ( while kill "${pid}" 2>/dev/null; do /bin/sleep 0.2; done ) &
+        pgids+=( "-$(/bin/ps -o pgid= "${pid}")" )
+    done
+    unique=()
+    while IFS='' read -r item; do
+        unique+=( "${item}" );
+    done < <(printf '%s\n' "${pids[@]}" "${pgids[@]}" | sort | uniq)
+    echo 'Killing existing '"${username}"' procesess: '"${unique[*]}"'.'
+    jobs=()
+    for pid in "${unique[@]}"; do
+        ( while /bin/kill -- "${pid}" 2>/dev/null; do /bin/sleep 0.2; done ) &
         jobs+=( "${!}" )
     done
     wait "${jobs[@]}"
@@ -87,7 +95,7 @@ print_descendents() {
     readonly pids
     echo "${pids[*]}"
 
-    if [ "${#pids[@]}" -ne "0" ]; then
+    if [[ ${#pids[@]} -ne 0 ]]; then
         IFS=','
         print_descendents "${pids[*]}"
     fi
