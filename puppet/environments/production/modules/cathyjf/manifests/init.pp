@@ -84,7 +84,7 @@ class cathyjf::fish_shell {
         command => ['/usr/bin/chsh', '-s', $fish_shell, $facts['cathy_username']],
         unless  => @("EOT")
             /bin/test "`/usr/bin/dscl . read /Users/${sanitized_username} UserShell | /usr/bin/sed 's/UserShell: //'`" \
-                = ${shell_escape($fish_shell)}
+                = ${stdlib::shell_escape($fish_shell)}
             |-EOT
     }
 }

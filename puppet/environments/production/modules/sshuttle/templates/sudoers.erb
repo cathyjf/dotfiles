@@ -1,6 +1,4 @@
-<%= @sudoers_username %> ALL = (root) NOPASSWD: /usr/bin/env ^PYTHONPATH=/private/var/sshuttle/sshuttle \
-    /Applications/Xcode\.app/Contents/Developer/usr/bin/python3 \
-    /private/var/sshuttle/sshuttle/sshuttle/__main__\.py (-v ?){0,2} --method auto --firewall$
+<%= @sudoers_firewall %>
 
 <%= @sudoers_username %> ALL = (root) NOPASSWD: /usr/bin/nice ^-n -20 -- \
     /usr/bin/sudo -nu <%= @sudoers_username %> -- /private/var/sshuttle/sshuttle/run \

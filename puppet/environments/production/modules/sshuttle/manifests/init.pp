@@ -35,6 +35,17 @@ define sshuttle::encrypted_ssh_key {
     }
 }
 
+# Return an entry to be used in the sudoers file.
+function sshuttle::sudoers_entry(String $username, String $python) >> String {
+    return @("EOT")
+        ${username} ALL = (root) NOPASSWD: /usr/bin/env \
+            ^PYTHONPATH=/private/var/sshuttle/sshuttle \
+                ${regexpescape(stdlib::shell_escape($python))} \
+                    /private/var/sshuttle/sshuttle/sshuttle/__main__\.py \
+                        (-v ?){0,2} --method auto --firewall$
+        |-EOT
+}
+
 # A full configuration of the `sshuttle` program.
 class sshuttle {
     $home = '/var/sshuttle'
@@ -91,8 +102,21 @@ class sshuttle {
         umask       => $default_umask
     }
 
-    # This variables is referenced in the `sshuttle/sudoers.erb` template.
+    # These variables are referenced in the `sshuttle/sudoers.erb` template.
     $sudoers_username = sanitized_username($username)
+    $sudoers_firewall = [
+        '/Applications/Xcode.app/Contents/Developer/usr/bin/python3',
+        '/Library/Frameworks/Python.framework/Versions/3.13/bin/python3'
+    ].reduce('') |$memo, $python| {
+        @("EOT")
+            ${memo}
+            ${sudoers_username} ALL = (root) NOPASSWD: /usr/bin/env \
+                ^PYTHONPATH=/private/var/sshuttle/sshuttle \
+                    ${regexpescape(stdlib::shell_escape($python))} \
+                        /private/var/sshuttle/sshuttle/sshuttle/__main__\.py \
+                            (-v ?){0,2} --method auto --firewall$
+            |-EOT
+    }.lstrip
     file { '/etc/sudoers.d/sshuttle-service':
         ensure       => file,
         content      => template('sshuttle/sudoers.erb'),

@@ -70,9 +70,10 @@ echo "Launching sshuttle with config (${sshuttle_conf})..."
         printf '[%s] %s\n' "$(/bin/date -Iseconds)" "${line}"
     done < <(
         while true; do
-            /usr/bin/caffeinate -im -- \
-                /usr/bin/sudo -n -- /usr/bin/nice -n '-20' -- /usr/bin/sudo -nu "${username}" -- \
-                    "${sshuttle_run}" @"${sshuttle_conf}" "${option_verbose[@]}" 2>&1 <&-
+            PATH=/Library/Frameworks/Python.framework/Versions/3.13/bin:"${PATH}" \
+                /usr/bin/caffeinate -im -- \
+                    /usr/bin/sudo -n -- /usr/bin/nice -n '-20' -- /usr/bin/sudo -nu "${username}" -- \
+                        "${sshuttle_run}" @"${sshuttle_conf}" "${option_verbose[@]}" 2>&1 <&-
             echo 'The sshuttle process ended. Relaunching it soon...'
             sleep 10
         done
