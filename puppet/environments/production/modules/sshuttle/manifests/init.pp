@@ -18,7 +18,7 @@ define sshuttle::encrypted_ssh_key {
         onlyif  => [[
             '/bin/bash', '-c', '[[ $(/usr/bin/stat -f %z "$1") -le 0 ]]', 'argv0', $file_title
         ]],
-        umask   => $sshuttle::default_umask,
+        umask   => '0077',
         command => [
             '/bin/bash', '-c', (
                 # The point of this formulation is to avoid running the untrusted `gpg` binary
@@ -35,23 +35,11 @@ define sshuttle::encrypted_ssh_key {
     }
 }
 
-# Return an entry to be used in the sudoers file.
-function sshuttle::sudoers_entry(String $username, String $python) >> String {
-    return @("EOT")
-        ${username} ALL = (root) NOPASSWD: /usr/bin/env \
-            ^PYTHONPATH=/private/var/sshuttle/sshuttle \
-                ${regexpescape(stdlib::shell_escape($python))} \
-                    /private/var/sshuttle/sshuttle/sshuttle/__main__\.py \
-                        (-v ?){0,2} --method auto --firewall$
-        |-EOT
-}
-
 # A full configuration of the `sshuttle` program.
 class sshuttle {
     $home = '/var/sshuttle'
     $username = '_sshuttle'
     $groupname = '_sshuttle'
-    $default_umask = '0077'
 
     # Set up user and group.
     cathyjf::role_account_and_group {
@@ -62,16 +50,20 @@ class sshuttle {
 
     $default_file_params = {
         ensure => file,
-        owner  => $username,
+        owner  => 'root',
         group  => $groupname,
-        mode   => 'u+rwX,g=,o='
+        mode   => 'ugo=,g+rX'
     }
     file {
         default:
             * => $default_file_params;
-        [$home, "${home}/.config", "${home}/.ssh", "${home}/sshuttle", "${home}/logs"]:
-            ensure  => directory;
-        ["${home}/logs/cathy-alienware.log", "${home}/logs/cathy-alienware.log.bak"]: ;
+        [$home, "${home}/.config", "${home}/.ssh", "${home}/sshuttle"]:
+            ensure => directory;
+        "${home}/logs":
+            ensure => directory,
+            mode   => 'ug=xrw,o=';
+        ["${home}/logs/cathy-alienware.log", "${home}/logs/cathy-alienware.log.bak"]:
+            mode   => 'ug=rw,o=';
         "${home}/sshuttle.tar.bz2":
             source         => 'puppet:///modules/sshuttle/sshuttle-2f3171670c6188eb842912bf0ab7f93dc0da179b.tar.bz2',
             checksum_value => '85810f8caace52d4a00dd0ad77a4b5cd74ad0a32a7e36fa3d6eb87bd858f9c49';
@@ -81,29 +73,39 @@ class sshuttle {
             source => 'puppet:///modules/sshuttle/ssh/config';
         "${home}/connect.sh":
             source => 'puppet:///modules/sshuttle/connect.sh',
-            mode   => 'u+rwx,g=,o=';
+            mode   => 'uo=,g=rx';
     }
     sshuttle::encrypted_ssh_key { ['known_hosts', 'id_ed25519', 'id_ed25519.pub']: }
 
     exec { 'uncompress sshuttle.tar.bz2':
-        # We need to use `sudo` here to run the command as the `_sshuttle` service user, instead
+        # We need to use `sudo` here to run the command as the `root:_sshuttle` identity, instead
         # of specifying the `user` property of the `exec` resource, because specifying the `user`
         # property causes `puppet apply` to refuse to run without root access, whereas by using
         # `sudo` instead, we can still cause `puppet apply` to prepare a diff without root access.
         command     => [
-            '/usr/bin/sudo', '-u', $username,
-                '/usr/bin/tar',
-                    '-f', "${home}/sshuttle.tar.bz2", '-x', '-p', '--strip-components', '1',
-                    '-C', "${home}/sshuttle"
+            '/bin/bash', '-e', '-c', (
+                @(EOT)
+                    /usr/bin/sudo -u root -g "$1" \
+                        /usr/bin/tar --no-same-owner -f "$2" -x --strip-components 1 -C "$3"
+                    /bin/chmod -R "$4" "$3"
+                    |-EOT
+                ), 'argv0',
+                $groupname, "${home}/sshuttle.tar.bz2", "${home}/sshuttle",
+                $default_file_params['mode']
         ],
-        require     => User[$username],
+        require     => [
+            User[$username], Group[$groupname],
+            # This requirement is necessary so that puppet can become `root:_sshuttle`.
+            File['/etc/sudoers.d/sshuttle-service']
+        ],
         subscribe   => File["${home}/sshuttle.tar.bz2"],
         refreshonly => true,
-        umask       => $default_umask
+        umask       => '0706' # ~(uo=,g=rwx)
     }
 
     # These variables are referenced in the `sshuttle/sudoers.erb` template.
     $sudoers_username = sanitized_username($username)
+    $sudoers_groupname = sanitized_username($groupname)
     $sudoers_firewall = [
         '/Applications/Xcode.app/Contents/Developer/usr/bin/python3',
         '/Library/Frameworks/Python.framework/Versions/3.13/bin/python3'
