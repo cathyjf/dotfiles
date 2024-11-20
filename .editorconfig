@@ -2,8 +2,11 @@
 
 root = true
 
-[*.{cpp,fish,fish.tmpl,js,sh,pp}]
+[*]
 end_of_line = lf
+charset = utf-8
+
+[*.{cpp,fish,fish.tmpl,js,sh,pp,epp}]
 insert_final_newline = false
 indent_style = space
 indent_size = 4

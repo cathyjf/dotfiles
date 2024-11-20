@@ -1,0 +1,17 @@
+<%- |
+    String $username,
+    String $groupname,
+    Numeric $cathy_uid,
+    String $firewall
+| -%>
+<%= $firewall %>
+
+<%= $username %> ALL = (root) NOPASSWD: /usr/bin/nice ^-n -20 -- \
+    /usr/bin/sudo -nu <%= $username %> -- /private/var/sshuttle/sshuttle/run \
+    @/private/var/sshuttle/\.config/sshuttle\.conf (-v ?){0,2}$
+
+User_Alias CATHY_UID = #<%= $cathy_uid %>
+CATHY_UID ALL = (<%= $username %>) CWD=~<%= $username %> NOPASSWD: /var/sshuttle/connect.sh \
+    ^(-s [0-9]{0,5}\.?[0-9]{0,5} ?)?(-v ?){0,2}(-x)?$
+
+root ALL = (:<%= $groupname %>) /usr/bin/tar

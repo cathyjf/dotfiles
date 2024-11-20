@@ -103,27 +103,28 @@ class sshuttle {
         umask       => '0706' # ~(uo=,g=rwx)
     }
 
-    # These variables are referenced in the `sshuttle/sudoers.erb` template.
-    $sudoers_username = sanitized_username($username)
-    $sudoers_groupname = sanitized_username($groupname)
-    $sudoers_firewall = [
-        '/Applications/Xcode.app/Contents/Developer/usr/bin/python3',
-        '/Library/Frameworks/Python.framework/Versions/3.13/bin/python3'
-    ].reduce('') |$memo, $python| {
-        @("EOT")
-            ${memo}
-            ${sudoers_username} ALL = (root) NOPASSWD: /usr/bin/env \
-                ^PYTHONPATH=/private/var/sshuttle/sshuttle \
-                    ${regexpescape(stdlib::shell_escape($python))} \
-                        /private/var/sshuttle/sshuttle/sshuttle/__main__\.py \
-                            (-v ?){0,2} --method auto --firewall$
-            |-EOT
-    }.lstrip
     file { '/etc/sudoers.d/sshuttle-service':
         ensure       => file,
-        content      => template('sshuttle/sudoers.erb'),
         mode         => '0440',
-        validate_cmd => $cathyjf::validate_sudoers
+        validate_cmd => $cathyjf::validate_sudoers,
+        content      => epp('sshuttle/sudoers.epp', {
+            username  => $username,
+            groupname => $groupname,
+            cathy_uid => $facts['cathy_uid'],
+            firewall  => [
+                '/Applications/Xcode.app/Contents/Developer/usr/bin/python3',
+                '/Library/Frameworks/Python.framework/Versions/3.13/bin/python3'
+            ].reduce('') |$memo, $python| {
+                @("EOT")
+                    ${memo}
+                    ${username} ALL = (root) NOPASSWD: /usr/bin/env \
+                        ^PYTHONPATH=/private/var/sshuttle/sshuttle \
+                            ${regexpescape(stdlib::shell_escape($python))} \
+                                /private/var/sshuttle/sshuttle/sshuttle/__main__\.py \
+                                    (-v ?){0,2} --method auto --firewall$
+                    |-EOT
+            }.lstrip
+        }),
     }
 
     # Ensure that Cathy can read the non-sensitive files in the `_sshuttle` home directory.
