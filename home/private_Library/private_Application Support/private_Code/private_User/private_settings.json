@@ -9,6 +9,9 @@
     "files.associations": {
         "*.pp": "puppetfile"
     },
+    "[puppet]": {
+        "files.insertFinalNewline": false
+    },
     "workbench.editor.empty.hint": "hidden",
     "workbench.colorCustomizations": {
         "[Default Dark Modern]": {
