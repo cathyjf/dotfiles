@@ -34,6 +34,9 @@ start_pf() {
 block return in proto tcp from any to any port 7575 # normal TCP connection
 block return out proto tcp from any to any port 7573 # reverse TCP connection
 
+# Also allow VirtualHere USB Server outgoing traffic over the VPN on ppp0.
+pass out on ppp0 proto tcp from any to 10.0.0.10 port 7573
+
 # Synergy (Deskflow)
 # All connections should go over ssh, so block all direct network connectivity.
 block return in proto tcp from any to any port {{ .synergy.serverPort }}
