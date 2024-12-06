@@ -128,9 +128,17 @@ class cathyjf {
         links  => follow,
         mode   => 'ugo=r'
     }
-    file { '/etc/puppetlabs/facter':
-        ensure => directory,
-        mode   => 'ugo=rx';
+    file {
+        # Configuration file for facter(8).
+        '/etc/puppetlabs/facter':
+            ensure => directory,
+            mode   => 'ugo=rx';
+        # These Office extensions are installed by Acrobat, but they are broken on arm64.
+        # Removing them prevents Office applications from throwing errors.
+        ['Word/linkCreation.dotm', 'Powerpoint/SaveAsAdobePDF.ppam'].map |$ex| {
+            "/Library/Application Support/Microsoft/Office365/User Content.localized/Startup/${ex}"
+        }:
+            ensure => absent;
     }
     Hash({
         '/etc/hosts' => {},
