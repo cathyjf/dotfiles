@@ -22,7 +22,7 @@ encryption = "gpg"
 [data.synergy]
     screenName = "{{
         eq .chezmoi.hostname `MacBook-Pro` |
-            ternary `cathy-macbookpro"` (
+            ternary `cathy-macbookpro` (
                 eq .chezmoi.hostname `Mac-mini` |
                     ternary `cathy-macmini` `cathy-macbookair`
             )
