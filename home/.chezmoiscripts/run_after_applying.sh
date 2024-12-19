@@ -160,20 +160,6 @@ test_pinentry_symlink() {
     fi
 }
 
-test_acrobat_extension() {
-    local office_directory="${chezmoi_target_path}"/Library/Group\ Containers/UBF8T346G9.Office
-    local acrobat_extension="${office_directory}"/User\ Content.localized/Startup.localized/Word/linkCreation.dotm
-    if [[ -f ${acrobat_extension} ]]; then
-        echo "The Adobe Acrobat extension for Microsoft Office is currently installed."
-        echo "This low-quality extension causes error messages to appear when loading Word documents."
-        echo
-        echo "There is no obvious downside to removing the extension."
-        echo
-        echo "To remove the Acrobat extension for Office, run:"
-        echo "    rm \"${acrobat_extension}\""
-    fi
-}
-
 verify_file_is_indelible() {
     # TODO: This function should verify that each parent in the directory tree is also indelible.
     if [ ! -e "$1" ]; then
@@ -261,7 +247,6 @@ apply_operation make_windows_file_history
 apply_operation maybe_test_gpg_key
 # apply_operation test_gpg_secret_key_backups
 apply_operation test_pinentry_symlink
-apply_operation test_acrobat_extension
 apply_operation apply_finder_defaults
 
 # TODO: Hardening these runtimes is currently not a particularly large security improvement.

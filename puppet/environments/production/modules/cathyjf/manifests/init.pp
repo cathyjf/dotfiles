@@ -128,16 +128,28 @@ class cathyjf {
         links  => follow,
         mode   => 'ugo=r'
     }
+    $office_extensions = (
+        ['Word/linkCreation.dotm', 'Powerpoint/SaveAsAdobePDF.ppam'].map |$ex| {
+            @("EOT"/L)
+            /Library/Application Support/Microsoft/Office365/\
+            User Content.localized/Startup/${ex}
+            |-EOT
+        }
+    ) + [
+        @("EOT"/L)
+        ${facts['chezmoi_target']}/Library/Group Containers/UBF8T346G9.Office/\
+        User Content.localized/Startup.localized/Word/linkCreation.dotm
+        |-EOT
+    ]
     file {
         # Configuration file for facter(8).
         '/etc/puppetlabs/facter':
             ensure => directory,
             mode   => 'ugo=rx';
         # These Office extensions are installed by Acrobat, but they are broken on arm64.
+        # They are also not very helpful on Intel even if they might work there.
         # Removing them prevents Office applications from throwing errors.
-        ['Word/linkCreation.dotm', 'Powerpoint/SaveAsAdobePDF.ppam'].map |$ex| {
-            "/Library/Application Support/Microsoft/Office365/User Content.localized/Startup/${ex}"
-        }:
+        $office_extensions:
             ensure => absent;
     }
     Hash({
