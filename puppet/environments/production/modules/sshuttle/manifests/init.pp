@@ -65,8 +65,8 @@ class sshuttle {
         ["${home}/logs/cathy-alienware.log", "${home}/logs/cathy-alienware.log.bak"]:
             mode   => 'ug=rw,o=';
         "${home}/sshuttle.tar.bz2":
-            source         => 'puppet:///modules/sshuttle/sshuttle-2f3171670c6188eb842912bf0ab7f93dc0da179b.tar.bz2',
-            checksum_value => '85810f8caace52d4a00dd0ad77a4b5cd74ad0a32a7e36fa3d6eb87bd858f9c49';
+            source         => 'puppet:///modules/sshuttle/sshuttle-1.3.1.tar.bz2',
+            checksum_value => 'c16aaa686789a6e7d22392220f712a0b11d1f947f5aee5c32d63bd23fd2100c9';
         "${home}/.config/sshuttle.conf":
             source => 'puppet:///modules/sshuttle/sshuttle.conf';
         "${home}/.ssh/config":
