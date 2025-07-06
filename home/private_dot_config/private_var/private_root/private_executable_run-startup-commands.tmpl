@@ -22,36 +22,108 @@ start_pf() {
     local smbd_path
     smbd_path="$(/usr/bin/readlink -f '{{ template `brew-root` . }}'/sbin/samba-dot-org-smbd)"
     local vhserver=/Applications/VirtualHereServerUniversal.app
+    local adguardhome=/Applications/AdGuardHome/AdGuardHome
     /usr/libexec/ApplicationFirewall/socketfilterfw \
         --setglobalstate on \
         --setallowsigned off --setallowsignedapp off --setstealthmode on \
         --add "${smbd_path}" --unblockapp "${smbd_path}" \
-        --add "${vhserver}" --blockapp "${vhserver}"
+        --add "${vhserver}" --blockapp "${vhserver}" \
+        --add "${adguardhome}" --blockapp "${adguardhome}"
 
-    /sbin/pfctl -a com.cathyjf -f - << 'CATHYJF_RULES'
+    /sbin/pfctl \
+        -D 'eth_int=en0' \
+        -D 'plain_dns_listen={ 53 }' \
+        -a 'com.cathyjf' -f - << 'CATHYJF_RULES'
+###
+# Normalization rules
+###
+
+scrub in on ! lo0
+
+###
+# Translation rules
+###
+
+# DNS over HTTPS
+rdr on lo0 inet proto { tcp, udp } to port 443 -> 127.0.0.1 port 30443
+
+# Plain DNS
+rdr on lo0 inet proto udp to port 53 -> 127.0.0.1 port 30053
+table <plain_dns_allowed> { samsung-tv }
+table <plain_dns_target> { cathy-mac }
+rdr on $eth_int inet proto udp \
+    from <plain_dns_allowed> to <plain_dns_target> port $plain_dns_listen \
+        -> 127.0.0.1 port 30053
+
+# DNS over TLS (tcp) and Quic (udp)
+rdr on lo0 inet proto { tcp, udp } to port 853 -> 127.0.0.1 port 30853
+rdr on $eth_int inet proto { tcp, udp } \
+    from 192.168.1.0/24 to cathy-mac port 853 -> 127.0.0.1 port 30853
+
+###
+# Filtering rules
+###
+
+# Block and log unexpected incoming connection attempts to root processes.
+pass out on ! lo0 proto { tcp, udp } user root
+block return in log on ! lo0 proto { tcp, udp } user root
+pass in on ! lo0 proto tcp to port 22 user root
+
+# Drop and log incoming connections from the internet.
+table <local_hosts> { self $eth_int:network fe80::/10 10.0.0.10 172.16.42.0/24 }
+pass out on ! lo0
+block drop in log on ! lo0 from ! <local_hosts>
+
 # VirtualHere USB Server
 # All connections should go over ssh, so block all direct network connectivity.
-block return in proto tcp from any to any port 7575 # normal TCP connection
-block return out proto tcp from any to any port 7573 # reverse TCP connection
+block return in proto tcp to port 7575 # normal TCP connection
+block return out proto tcp to port 7573 # reverse TCP connection
 
 # Also allow VirtualHere USB Server outgoing traffic over the VPN on ppp0.
-pass out on ppp0 proto tcp from any to 10.0.0.10 port 7573
+pass out on ppp0 proto tcp to 10.0.0.10 port 7573
 
 # Synergy (Deskflow)
 # All connections should go over ssh, so block all direct network connectivity.
-block return in proto tcp from any to any port {{ .synergy.serverPort }}
-pass in inet proto tcp from 127.0.0.1 to 127.0.0.1 port {{ .synergy.serverPort }}
+block return in on ! lo0 proto tcp to port {{ .synergy.serverPort }}
+
+# DNS
+
+# Block communications with public plain DNS servers over port 53.
+# All DNS lookup requests should be performed securely, not over plain DNS.
+# (It is probably not necessary for these rules to contain an exception for
+#  <plain_dns_allowed> hosts becuase DNS queries do not generally originate
+#  from client port 53. However, the DNS specification does not disallow it.)
+block return in on ! lo0 proto { tcp, udp } from ! <plain_dns_allowed> port 53
+block return out on ! lo0 proto { tcp, udp } to ! <plain_dns_allowed> port 53
+
+# Drop unauthorized communications with a local plain DNS server.
+block drop in on ! lo0 proto { tcp, udp } from ! <plain_dns_allowed> to port $plain_dns_listen
+block drop out on ! lo0 proto { tcp, udp } from port $plain_dns_listen to ! <plain_dns_allowed>
+
+# Prevent accidentally exposing a local plain DNS server to the internet.
+block drop in on ! lo0 proto { tcp, udp } to ! <plain_dns_target> port $plain_dns_listen
+block drop out on ! lo0 proto { tcp, udp } from ! <plain_dns_target> port $plain_dns_listen
 
 # Samba
-block return in proto tcp from any to any port 445
-pass in inet proto tcp from 127.0.0.1 to 127.0.0.1 port 445
-pass in inet proto tcp from { \
+block return in on ! lo0 proto tcp to port 445
+table <samba_allowed> { \
     cathy-alienware, cathy-mac, cathy-macbookair, cathy-macbookair-wifi \
-} to cathy-mac port 445
+}
+pass in on $eth_int inet proto tcp from <samba_allowed> to cathy-mac port 445
 CATHYJF_RULES
 
     local pf_conf=/var/root/pf.conf
-    /bin/cat /etc/pf.conf - > "${pf_conf}" <<< 'anchor "com.cathyjf"'
+    /bin/cat > "${pf_conf}" << 'CATHYJF_CONFIG'
+scrub-anchor "com.apple/*"
+nat-anchor "com.apple/*"
+rdr-anchor "com.apple/*"
+rdr-anchor "com.cathyjf" # Added by Cathy
+dummynet-anchor "com.apple/*"
+anchor "com.apple/*"
+load anchor "com.apple" from "/etc/pf.anchors/com.apple"
+anchor "com.cathyjf" # Added by Cathy
+CATHYJF_CONFIG
+
     echo "Starting (or restarting) pf..."
     /sbin/pfctl -E -f "${pf_conf}"
 }
