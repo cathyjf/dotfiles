@@ -17,23 +17,56 @@ mount_windows_file_history() {
         -mountPoint "${1}" '{{ .windowsFileHistory.magicVolumeID }}'
 }
 
-start_pf() {
-    # Apply some rules to the macOS application firewall.
-    local smbd_path
-    smbd_path="$(/usr/bin/readlink -f '{{ template `brew-root` . }}'/sbin/samba-dot-org-smbd)"
-    local vhserver=/Applications/VirtualHereServerUniversal.app
-    local adguardhome=/Applications/AdGuardHome/AdGuardHome
-    /usr/libexec/ApplicationFirewall/socketfilterfw \
-        --setglobalstate on \
-        --setallowsigned off --setallowsignedapp off --setstealthmode on \
-        --add "${smbd_path}" --unblockapp "${smbd_path}" \
-        --add "${vhserver}" --blockapp "${vhserver}" \
-        --add "${adguardhome}" --blockapp "${adguardhome}"
-
+pf_define_anchor() {
+    echo "Loading rules into ${1}..."
     /sbin/pfctl \
-        -D 'eth_int=en0' \
-        -D 'plain_dns_listen={ 53 }' \
-        -a 'com.cathyjf' -f - << 'CATHYJF_RULES'
+            -D 'eth_int=en0' \
+            -D 'plain_dns_listen={ 53 }' \
+            -a "${1}" -f -
+}
+
+pf_is_configured() {
+    {
+        /sbin/pfctl -s References 2>/dev/null | /usr/bin/grep -q '\spfctl\s';
+    } && {
+        /sbin/pfctl -s rules 2>/dev/null | /usr/bin/grep -q '^anchor "com.cathyjf" all$';
+    } && {
+        /sbin/pfctl -s nat 2>/dev/null | /usr/bin/grep -q '^rdr-anchor "com.cathyjf" all$';
+    }
+}
+
+ensure_pf_is_configured() {
+    if pf_is_configured; then
+        return 1
+    fi
+    /sbin/pfctl -E -f - << 'CATHYJF_CONFIG'
+scrub-anchor "com.apple/*"
+nat-anchor "com.apple/*"
+rdr-anchor "com.apple/*"
+rdr-anchor "com.cathyjf" # Added by Cathy
+dummynet-anchor "com.apple/*"
+anchor "com.apple/*"
+load anchor "com.apple" from "/etc/pf.anchors/com.apple"
+anchor "com.cathyjf" # Added by Cathy
+CATHYJF_CONFIG
+}
+
+pf_define_cathyjf_anchors() {
+    pf_define_anchor 'com.cathyjf/filter-root' << 'CATHYJF_RULES'
+# Block and log unexpected incoming connection attempts to root processes.
+pass out on ! lo0 proto { tcp, udp } user root
+block return in log on ! lo0 proto { tcp, udp } user root
+pass in on ! lo0 proto tcp to port 22 user root
+CATHYJF_RULES
+
+    pf_define_anchor 'com.cathyjf/filter-internet' << 'CATHYJF_RULES'
+# Drop and log incoming connections from the internet.
+table <local_hosts> { self $eth_int:network fe80::/10 10.0.0.10 172.16.42.0/24 }
+pass out on ! lo0
+block drop in log on ! lo0 from ! <local_hosts>
+CATHYJF_RULES
+
+    pf_define_anchor 'com.cathyjf' << 'CATHYJF_RULES'
 ###
 # Normalization rules
 ###
@@ -62,17 +95,9 @@ rdr on $eth_int inet proto { tcp, udp } \
 
 ###
 # Filtering rules
-###
 
-# Block and log unexpected incoming connection attempts to root processes.
-pass out on ! lo0 proto { tcp, udp } user root
-block return in log on ! lo0 proto { tcp, udp } user root
-pass in on ! lo0 proto tcp to port 22 user root
-
-# Drop and log incoming connections from the internet.
-table <local_hosts> { self $eth_int:network fe80::/10 10.0.0.10 172.16.42.0/24 }
-pass out on ! lo0
-block drop in log on ! lo0 from ! <local_hosts>
+anchor "filter-root"
+anchor "filter-internet"
 
 # VirtualHere USB Server
 # All connections should go over ssh, so block all direct network connectivity.
@@ -90,9 +115,6 @@ block return in on ! lo0 proto tcp to port {{ .synergy.serverPort }}
 
 # Block communications with public plain DNS servers over port 53.
 # All DNS lookup requests should be performed securely, not over plain DNS.
-# (It is probably not necessary for these rules to contain an exception for
-#  <plain_dns_allowed> hosts becuase DNS queries do not generally originate
-#  from client port 53. However, the DNS specification does not disallow it.)
 block return in on ! lo0 proto { tcp, udp } from ! <plain_dns_allowed> port 53
 block return out on ! lo0 proto { tcp, udp } to ! <plain_dns_allowed> port 53
 
@@ -111,23 +133,34 @@ table <samba_allowed> { \
 }
 pass in on $eth_int inet proto tcp from <samba_allowed> to cathy-mac port 445
 CATHYJF_RULES
+}
 
-    local pf_conf=/var/root/pf.conf
-    /bin/cat > "${pf_conf}" << 'CATHYJF_CONFIG'
-scrub-anchor "com.apple/*"
-nat-anchor "com.apple/*"
-rdr-anchor "com.apple/*"
-rdr-anchor "com.cathyjf" # Added by Cathy
-dummynet-anchor "com.apple/*"
-anchor "com.apple/*"
-load anchor "com.apple" from "/etc/pf.anchors/com.apple"
-anchor "com.cathyjf" # Added by Cathy
-CATHYJF_CONFIG
+configure_application_firewall() {
+    # Apply some rules to the macOS application firewall.
+    local smbd_path
+    smbd_path="$(/usr/bin/readlink -f '{{ template `brew-root` . }}'/sbin/samba-dot-org-smbd)"
+    local vhserver=/Applications/VirtualHereServerUniversal.app
+    local adguardhome=/Applications/AdGuardHome/AdGuardHome
+    /usr/libexec/ApplicationFirewall/socketfilterfw \
+        --setglobalstate on \
+        --setallowsigned off --setallowsignedapp off --setstealthmode on \
+        --add "${smbd_path}" --unblockapp "${smbd_path}" \
+        --add "${vhserver}" --blockapp "${vhserver}" \
+        --add "${adguardhome}" --blockapp "${adguardhome}"
+}
 
-    echo "Starting (or restarting) pf..."
-    /sbin/pfctl -E -f "${pf_conf}"
+start_firewalls() {
+    configure_application_firewall
+    pf_define_cathyjf_anchors
+    if ! ensure_pf_is_configured; then
+        return 1
+    fi
 }
 
 mount_windows_file_history "/Volumes/Windows File History" &
-start_pf &
+declare exit_code=0
+if ! start_firewalls; then
+    exit_code=1
+fi
 wait
+exit "${exit_code}"
