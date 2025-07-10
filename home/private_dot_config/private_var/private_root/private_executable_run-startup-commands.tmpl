@@ -81,31 +81,7 @@ CATHYJF_CONFIG
 }
 
 pf_define_cathyjf_anchors() {
-    pf_define_anchor 'com.cathyjf/filter-root' << 'CATHYJF_RULES'
-# Block and log unexpected incoming connection attempts to root processes.
-pass out on ! lo0 proto { tcp, udp } user root
-block return in log on ! lo0 proto { tcp, udp } user root
-pass in on ! lo0 proto tcp to port 22 user root
-CATHYJF_RULES
-
-    pf_define_anchor 'com.cathyjf/filter-internet' << 'CATHYJF_RULES'
-# Drop and log incoming connections from the internet.
-table <local_hosts> { self $eth_int:network fe80::/10 10.0.0.10 172.16.42.0/24 }
-pass out on ! lo0
-block drop in log on ! lo0 from ! <local_hosts>
-CATHYJF_RULES
-
-    pf_define_anchor 'com.cathyjf' << 'CATHYJF_RULES'
-###
-# Normalization rules
-###
-
-scrub in on ! lo0
-
-###
-# Translation rules
-###
-
+    pf_define_anchor 'com.cathyjf/filter-dns' << 'EOT'
 # DNS over HTTPS
 rdr on lo0 inet proto { tcp, udp } to port 443 -> 127.0.0.1 port 30443
 
@@ -122,27 +98,6 @@ rdr on lo0 inet proto { tcp, udp } to port 853 -> 127.0.0.1 port 30853
 rdr on $eth_int inet proto { tcp, udp } \
     from 192.168.1.0/24 to cathy-mac port 853 -> 127.0.0.1 port 30853
 
-###
-# Filtering rules
-###
-
-anchor "filter-root"
-anchor "filter-internet"
-
-# VirtualHere USB Server
-# All connections should go over ssh, so block all direct network connectivity.
-block return in proto tcp to port 7575 # normal TCP connection
-block return out proto tcp to port 7573 # reverse TCP connection
-
-# Also allow VirtualHere USB Server outgoing traffic over the VPN on ppp0.
-pass out on ppp0 proto tcp to 10.0.0.10 port 7573
-
-# Synergy (Deskflow)
-# All connections should go over ssh, so block all direct network connectivity.
-block return in on ! lo0 proto tcp to port {{ .synergy.serverPort }}
-
-# DNS
-
 # Block communications with public plain DNS servers over port 53.
 # All DNS lookup requests should be performed securely, not over plain DNS.
 block return in on ! lo0 proto { tcp, udp } from ! <plain_dns_allowed> port 53
@@ -155,14 +110,62 @@ block drop out on ! lo0 proto { tcp, udp } from port $plain_dns_listen to ! <pla
 # Prevent accidentally exposing a local plain DNS server to the internet.
 block drop in on ! lo0 proto { tcp, udp } to ! <plain_dns_target> port $plain_dns_listen
 block drop out on ! lo0 proto { tcp, udp } from ! <plain_dns_target> port $plain_dns_listen
+EOT
 
+    pf_define_anchor 'com.cathyjf/filter-root' << 'EOT'
+# Block and log unexpected incoming connection attempts to root processes.
+pass out on ! lo0 proto { tcp, udp } user root
+block return in log on ! lo0 proto { tcp, udp } user root
+pass in on ! lo0 proto tcp to port 22 user root
+EOT
+
+    pf_define_anchor 'com.cathyjf/filter-internet' << 'EOT'
+# Drop and log incoming connections from the internet.
+table <local_hosts> { self $eth_int:network fe80::/10 10.0.0.10 172.16.42.0/24 }
+pass out on ! lo0
+block drop in log on ! lo0 from ! <local_hosts>
+EOT
+
+    pf_define_anchor 'com.cathyjf/filter-vhusb' << 'EOT'
+# VirtualHere USB Server
+# All connections should go over ssh, so block all direct network connectivity.
+block return in proto tcp to port 7575 # normal TCP connection
+block return out proto tcp to port 7573 # reverse TCP connection
+
+# Also allow VirtualHere USB Server outgoing traffic over the VPN on ppp0.
+pass out on ppp0 proto tcp to 10.0.0.10 port 7573
+EOT
+
+    pf_define_anchor 'com.cathyjf/filter-deskflow' << 'EOT'
+# Deskflow (Synergy)
+# All connections should go over ssh, so block all direct network connectivity.
+block return in on ! lo0 proto tcp to port {{ .synergy.serverPort }}
+EOT
+
+    pf_define_anchor 'com.cathyjf/filter-samba' << 'EOT'
 # Samba
 block return in on ! lo0 proto tcp to port 445
 table <samba_allowed> { \
     cathy-alienware, cathy-mac, cathy-macbookair, cathy-macbookair-wifi \
 }
 pass in on $eth_int inet proto tcp from <samba_allowed> to cathy-mac port 445
-CATHYJF_RULES
+EOT
+
+    pf_define_anchor 'com.cathyjf' << 'EOT'
+# Normalization rules
+scrub in on ! lo0
+
+# Translation rules
+rdr-anchor "filter-dns"
+
+# Filtering rules
+anchor "filter-root"
+anchor "filter-internet"
+anchor "filter-vhusb"
+anchor "filter-deskflow"
+anchor "filter-samba"
+anchor "filter-dns"
+EOT
 }
 
 configure_application_firewall() {
