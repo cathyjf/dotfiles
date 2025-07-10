@@ -17,12 +17,41 @@ mount_windows_file_history() {
         -mountPoint "${1}" '{{ .windowsFileHistory.magicVolumeID }}'
 }
 
+pfctl_filtered() {
+    local -r IFS=''
+    local magic_error='***error'
+    local line
+    while read -r line; do
+        case "${line}" in
+            # Suppress some messages that aren't useful.
+            'No ALTQ support in kernel');;
+            'ALTQ related functions disabled');;
+            'pfctl: Use of -f option, could result in flushing of rules');;
+            'present in the main ruleset added by the system at startup.');;
+            'See /etc/pf.conf for further details.');;
+            '');;
+            "${magic_error}")
+                return 1
+                ;;
+            *)
+                echo "${line}"
+                ;;
+        esac
+    done < <(
+        if ! /sbin/pfctl "${@}" 2>&1; then
+            echo "${magic_error}"
+        fi
+    )
+}
+
 pf_define_anchor() {
     echo "Loading rules into ${1}..."
-    /sbin/pfctl \
-            -D 'eth_int=en0' \
-            -D 'plain_dns_listen={ 53 }' \
-            -a "${1}" -f -
+    pfctl_filtered \
+        -D 'eth_int=en0' \
+        -D 'plain_dns_listen={ 53 }' \
+        -a "${1}" -f - && \
+            echo "Succeeded loading rules into ${1}."
+    echo
 }
 
 pf_is_configured() {
@@ -39,7 +68,7 @@ ensure_pf_is_configured() {
     if pf_is_configured; then
         return 1
     fi
-    /sbin/pfctl -E -f - << 'CATHYJF_CONFIG'
+    pfctl_filtered -E -f - << 'CATHYJF_CONFIG'
 scrub-anchor "com.apple/*"
 nat-anchor "com.apple/*"
 rdr-anchor "com.apple/*"
@@ -95,6 +124,7 @@ rdr on $eth_int inet proto { tcp, udp } \
 
 ###
 # Filtering rules
+###
 
 anchor "filter-root"
 anchor "filter-internet"
@@ -158,9 +188,7 @@ start_firewalls() {
 }
 
 mount_windows_file_history "/Volumes/Windows File History" &
-declare exit_code=0
-if ! start_firewalls; then
-    exit_code=1
-fi
+declare exit_status=0
+start_firewalls || exit_status="${?}"
 wait
-exit "${exit_code}"
+exit "${exit_status}"
