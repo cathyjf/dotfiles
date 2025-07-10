@@ -100,20 +100,22 @@ rdr on $eth_int inet proto { tcp, udp } \
 
 # Block communications with public plain DNS servers over port 53.
 # All DNS lookup requests should be performed securely, not over plain DNS.
-block return in on ! lo0 proto { tcp, udp } from ! <plain_dns_allowed> port 53
-block return out on ! lo0 proto { tcp, udp } to ! <plain_dns_allowed> port 53
+block return in log on ! lo0 proto { tcp, udp } from ! <plain_dns_allowed> port 53
+block return out log on ! lo0 proto { tcp, udp } to ! <plain_dns_allowed> port 53
 
 # Drop unauthorized communications with a local plain DNS server.
-block drop in on ! lo0 proto { tcp, udp } from ! <plain_dns_allowed> to port $plain_dns_listen
-block drop out on ! lo0 proto { tcp, udp } from port $plain_dns_listen to ! <plain_dns_allowed>
+block drop in log on ! lo0 proto { tcp, udp } from ! <plain_dns_allowed> to port $plain_dns_listen
+block drop out log on ! lo0 proto { tcp, udp } from port $plain_dns_listen to ! <plain_dns_allowed>
 
 # Prevent accidentally exposing a local plain DNS server to the internet.
-block drop in on ! lo0 proto { tcp, udp } to ! <plain_dns_target> port $plain_dns_listen
-block drop out on ! lo0 proto { tcp, udp } from ! <plain_dns_target> port $plain_dns_listen
+block drop in log on ! lo0 proto { tcp, udp } to ! <plain_dns_target> port $plain_dns_listen
+block drop out log on ! lo0 proto { tcp, udp } from ! <plain_dns_target> port $plain_dns_listen
 EOT
 
     pf_define_anchor 'com.cathyjf/filter-root' << 'EOT'
 # Block and log unexpected incoming connection attempts to root processes.
+# This anchor doesn't really provide security; it's mainly intended to alert me
+# to instances of accidental misconfiguration.
 pass out on ! lo0 proto { tcp, udp } user root
 block return in log on ! lo0 proto { tcp, udp } user root
 pass in on ! lo0 proto tcp to port 22 user root
@@ -122,15 +124,21 @@ EOT
     pf_define_anchor 'com.cathyjf/filter-internet' << 'EOT'
 # Drop and log incoming connections from the internet.
 table <local_hosts> { self $eth_int:network fe80::/10 10.0.0.10 172.16.42.0/24 }
+# The following two rules are both necessary. The first rule ensures that state
+# is created for most outgoing connections. The second rule then carves out an
+# exception so that no state is created for connections between two hosts on
+# the local network; this avoids maintaining state on connections where such
+# state is not required to enforce this anchor's policy.
 pass out on ! lo0
+pass out on ! lo0 from <local_hosts> to <local_hosts> no state
 block drop in log on ! lo0 from ! <local_hosts>
 EOT
 
     pf_define_anchor 'com.cathyjf/filter-vhusb' << 'EOT'
 # VirtualHere USB Server
 # All connections should go over ssh, so block all direct network connectivity.
-block return in proto tcp to port 7575 # normal TCP connection
-block return out proto tcp to port 7573 # reverse TCP connection
+block return in log proto tcp to port 7575 # normal TCP connection
+block return out log proto tcp to port 7573 # reverse TCP connection
 
 # Also allow VirtualHere USB Server outgoing traffic over the VPN on ppp0.
 pass out on ppp0 proto tcp to 10.0.0.10 port 7573
@@ -139,12 +147,12 @@ EOT
     pf_define_anchor 'com.cathyjf/filter-deskflow' << 'EOT'
 # Deskflow (Synergy)
 # All connections should go over ssh, so block all direct network connectivity.
-block return in on ! lo0 proto tcp to port {{ .synergy.serverPort }}
+block return in log on ! lo0 proto tcp to port {{ .synergy.serverPort }}
 EOT
 
     pf_define_anchor 'com.cathyjf/filter-samba' << 'EOT'
 # Samba
-block return in on ! lo0 proto tcp to port 445
+block return in log on ! lo0 proto tcp to port 445
 table <samba_allowed> { \
     cathy-alienware, cathy-mac, cathy-macbookair, cathy-macbookair-wifi \
 }
@@ -159,12 +167,15 @@ scrub in on ! lo0
 rdr-anchor "filter-dns"
 
 # Filtering rules
-anchor "filter-root"
 anchor "filter-internet"
 anchor "filter-vhusb"
 anchor "filter-deskflow"
 anchor "filter-samba"
 anchor "filter-dns"
+
+# Unfortunately, the `filter-root` anchor blocks AirPlay. This is not a simple
+# problem to fix, so this anchor needs to be disabled for now.
+# anchor "filter-root"
 EOT
 }
 
