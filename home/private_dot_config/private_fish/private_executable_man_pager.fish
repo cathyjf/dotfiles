@@ -1,5 +1,10 @@
 #!/usr/bin/env fish
 
+function __get_default_browser
+    defaults read ~/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure | \
+        awk -F'"' '/http;/{print window[(NR)-1]}{window[NR]=$2}'
+end
+
 argparse --ignore-unknown "chrome" "title=" -- $argv || exit
 if set -ql _flag_chrome
     set -l html_title (begin; set -ql _flag_title && echo $_flag_title; end || echo "stdin")
@@ -12,7 +17,7 @@ if set -ql _flag_chrome
     m4 -D HTML_TITLE="$html_title" -D HTML_TEXT="undivert(`$temp_body')" \
         (status dirname)/terminal_html.m4 > $temp_html
     rm $temp_body
-    open $temp_html &
+    open -b (__get_default_browser) $temp_html &
 
     set -l fish_bin (status fish-path)
     $fish_bin -c 'sleep 3; rm -Rf -- $argv[1]' $temp_dir &
