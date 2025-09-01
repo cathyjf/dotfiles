@@ -26,4 +26,4 @@
     (regex "^/private/var/folders")
     (regex "^/private/var/scrypted"))
 
-(deny file-write* (literal "/private/var/scrypted/.scrypted/profile.sb"))
+(deny file-write* (literal "/private/var/scrypted/profile.sb"))

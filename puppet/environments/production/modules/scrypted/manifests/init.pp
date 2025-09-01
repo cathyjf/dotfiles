@@ -17,14 +17,14 @@ class scrypted {
             group  => $groupname,
             mode   => 'u=wrx,g=,o=';
         [$home, "${home}/.scrypted", '/var/log/scrypted']: ;
-        "${home}/.scrypted/profile.sb":
+        "${home}/profile.sb":
             ensure => file,
             mode   => 'u=r,g=,o=',
             source => 'puppet:///modules/scrypted/profile.sb';
     }
 
     cathyjf::file_readable_by_user {
-        ["${home}/.scrypted/profile.sb", '/var/log/scrypted']:
+        ["${home}/profile.sb", '/var/log/scrypted']:
     }
 
     file {

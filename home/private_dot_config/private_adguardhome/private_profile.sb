@@ -1,0 +1,25 @@
+(version 1)
+(allow default)
+
+(deny file-write*)
+
+(deny file-read* file-write*
+    (regex "^/Users")
+    (regex "^/Applications")
+    (regex "^/Volumes"))
+
+(allow file-read*
+    (literal "/Users")
+    (literal "/Users/Cathy")
+    (literal "/Users/Cathy/.config")
+    (literal "/Users/Cathy/.config/adguardhome"))
+
+(allow file-read* file-write*
+    (regex "^/Applications/AdGuardHome")
+    (regex "^/Users/Cathy/.config/adguardhome/conf")
+    (regex "^/Users/Cathy/.config/adguardhome/keys")
+    (regex "^/Users/Cathy/.config/adguardhome/work")
+    (regex "^/private/var/log/adguardhome"))
+
+(deny file-write*
+    (literal "/Users/Cathy/.config/adguardhome/profile.sb"))

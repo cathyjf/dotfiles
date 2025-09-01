@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>cathy.adguardhome</string>
+	<key>KeepAlive</key>
+	<true/>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/sandbox-exec</string>
+		<string>-f</string>
+		<string>/Users/Cathy/.config/adguardhome/profile.sb</string>
+		<string>/Applications/AdGuardHome/AdGuardHome</string>
+		<string>-c</string>
+		<string>/Users/Cathy/.config/adguardhome/conf/AdGuardHome.yaml</string>
+		<string>-w</string>
+		<string>/Users/Cathy/.config/adguardhome/work</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+</dict>
+</plist>
