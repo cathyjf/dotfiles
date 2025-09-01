@@ -41,7 +41,7 @@ define cathyjf::role_account_and_group (
 ) {
     $username = $title
     group { $groupname:
-        members => ((get_uid($username) != Undef) ? {
+        members => ((get_uid($username) != undef) ? {
             true  => [$username],
             false => []
         })
@@ -200,4 +200,5 @@ class cathyjf {
     include cathyjf::macos_nvram
     include cathyjf::manage_services
     include sshuttle
+    include scrypted
 }

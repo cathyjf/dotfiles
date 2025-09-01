@@ -121,6 +121,21 @@ block return in log on ! lo0 proto { tcp, udp } user root
 pass in on ! lo0 proto tcp to port 22 user root
 EOT
 
+    local wifi_int=$( \
+        /usr/sbin/networksetup -listallhardwareports | \
+            /usr/bin/grep 'Hardware Port: Wi-Fi' -A 1 | \
+            /usr/bin/sed -nr 's/Device: (en[0-9]+)/\1/p' | \
+            /usr/bin/tr '\n' ' '
+    )
+    if [[ $wifi_int ]]; then
+        pf_define_anchor 'com.cathyjf/filter-wifi' << EOT
+# Disallow all communications over Wi-Fi.
+block drop on { $wifi_int }
+EOT
+    else
+        echo '' | pf_define_anchor 'com.cathyjf/filter-wifi'
+    fi
+
     pf_define_anchor 'com.cathyjf/filter-internet' << 'EOT'
 # Drop and log incoming connections from the internet.
 table <local_hosts> { self $eth_int:network fe80::/10 10.0.0.10 172.16.42.0/24 }
@@ -159,6 +174,14 @@ table <samba_allowed> { \
 pass in on $eth_int inet proto tcp from <samba_allowed> to cathy-mac port 445
 EOT
 
+    pf_define_anchor 'com.cathyjf/filter-scrypted' << 'EOT'
+# Allow most traffic.
+pass user _scrypted
+
+# Block non-local access to the configuration portal and debug interface.
+block return in log on ! lo0 proto { tcp, udp } to port { 10443, 11080, 11081 }
+EOT
+
     pf_define_anchor 'com.cathyjf' << 'EOT'
 # Normalization rules
 scrub in on ! lo0
@@ -171,7 +194,9 @@ anchor "filter-internet"
 anchor "filter-vhusb"
 anchor "filter-deskflow"
 anchor "filter-samba"
+anchor "filter-scrypted"
 anchor "filter-dns"
+anchor "filter-wifi"
 
 # Unfortunately, the `filter-root` anchor blocks AirPlay. This is not a simple
 # problem to fix, so this anchor needs to be disabled for now.
@@ -183,6 +208,8 @@ configure_application_firewall() {
     # Apply some rules to the macOS application firewall.
     local smbd_path
     smbd_path="$(/usr/bin/readlink -f '{{ template `brew-root` . }}'/sbin/samba-dot-org-smbd)"
+    local node_path="${brew_root}"'/bin/node'
+    node_path="$(/usr/bin/readlink -f '{{ template `brew-root` . }}'/bin/node)"
     local vhserver=/Applications/VirtualHereServerUniversal.app
     local adguardhome=/Applications/AdGuardHome/AdGuardHome
     /usr/libexec/ApplicationFirewall/socketfilterfw \
@@ -190,7 +217,8 @@ configure_application_firewall() {
         --setallowsigned off --setallowsignedapp off --setstealthmode on \
         --add "${smbd_path}" --unblockapp "${smbd_path}" \
         --add "${vhserver}" --blockapp "${vhserver}" \
-        --add "${adguardhome}" --blockapp "${adguardhome}"
+        --add "${adguardhome}" --blockapp "${adguardhome}" \
+        --add "${node_path}" --unblockapp "${node_path}"
 }
 
 start_firewalls() {

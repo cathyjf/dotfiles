@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>cathy.scrypted.server</string>
+	<key>UserName</key>
+	<string>_scrypted</string>
+	<key>GroupName</key>
+	<string>_scrypted</string>
+	<key>WorkingDirectory</key>
+	<string>/var/scrypted/.scrypted</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>NODE_OPTIONS</key>
+		<string>--dns-result-order=ipv4first</string>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+	<key>InitGroups</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/sandbox-exec</string>
+		<string>-f</string>
+		<string>/var/scrypted/.scrypted/profile.sb</string>
+		<string>/opt/homebrew/bin/npx</string>
+		<string>scrypted</string>
+		<string>serve</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/var/log/scrypted/err.log</string>
+	<key>StandardOutPath</key>
+	<string>/var/log/scrypted/out.log</string>
+</dict>
+</plist>

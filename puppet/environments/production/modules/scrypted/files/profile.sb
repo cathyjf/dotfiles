@@ -1,0 +1,29 @@
+(version 1)
+(allow default)
+
+(deny file-write*)
+
+(deny file-read*
+    (regex "^/Users")
+    (regex "^/Applications")
+    (regex "^/Library")
+    (regex "^/Volumes")
+    (regex "^/opt")
+    (regex "^/private"))
+
+(allow file-read*
+    (literal "/opt")
+    (regex "^/opt/homebrew")
+    (literal "/private")
+    (literal "/private/var")
+    (regex "^/private/var/db")
+    (literal "/private/etc")
+    (literal "/private/etc/localtime")
+    (literal "/private/etc/passwd")
+    (literal "/Library/Preferences/Logging/com.apple.diagnosticd.filter.plist"))
+
+(allow file-read* file-write*
+    (regex "^/private/var/folders")
+    (regex "^/private/var/scrypted"))
+
+(deny file-write* (literal "/private/var/scrypted/.scrypted/profile.sb"))
