@@ -1,4 +1,4 @@
-function pass
+function pass --wraps pass
     # This function (pass) is a wrapper for pass(1) that provides special
     # handling for displaying PDF secrets. The `--raw` argument can be
     # supplied as an argument to bypass this wrapper and invoke the original
