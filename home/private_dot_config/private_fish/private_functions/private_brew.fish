@@ -14,12 +14,5 @@ function brew --wraps brew
         end
     end
 
-    set -l old_umask (umask)
-    umask 0022 # u=rwx,go=rx
-
-    __brew_inner $argv
-    set -l return_value $status
-
-    umask $old_umask
-    return $reutrn_value
+    apply_liberal_umask __brew_inner $argv
 end
