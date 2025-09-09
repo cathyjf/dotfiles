@@ -129,8 +129,10 @@ EOT
     )
     if [[ $wifi_int ]]; then
         pf_define_anchor 'com.cathyjf/filter-wifi' << EOT
-# Disallow all communications over Wi-Fi.
-block drop on { $wifi_int }
+# Drop Wi-Fi traffic except outgoing local traffic.
+table <local_hosts> { 172.16.42.0/24 fe80::/10 }
+pass out on { $wifi_int }
+block drop in log on { $wifi_int } from ! <local_hosts>
 EOT
     else
         echo '' | pf_define_anchor 'com.cathyjf/filter-wifi'
@@ -219,6 +221,10 @@ configure_application_firewall() {
         --add "${vhserver}" --blockapp "${vhserver}" \
         --add "${adguardhome}" --blockapp "${adguardhome}" \
         --add "${node_path}" --unblockapp "${node_path}"
+
+    # Custom static routes.
+    /sbin/route add -host -ifscope en0 192.168.1.120 cathy-alienware > /dev/null 2>&1
+    /sbin/route add -host -ifscope en0 10.0.0.10 cathy-alienware > /dev/null 2>&1
 }
 
 start_firewalls() {
